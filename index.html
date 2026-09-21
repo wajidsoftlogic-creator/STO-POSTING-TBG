@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STO Transfer Tracker</title>
+<style>
+  :root{
+    --bg:#f5f3ee; --panel:#ffffff; --panel2:#f0ede5; --border:#dcd6c8;
+    --text:#242118; --text-dim:#756f60; --accent:#b5701c; --accent-dim:#f0dcb8;
+    --accent-text:#3a2205;
+    --good:#1d8a3f; --good-bg:#e3f5e6; --bad:#c62a25; --bad-bg:#fbe4e2;
+    --warn:#9a6a05; --warn-bg:#faf0d6; --mono:'SF Mono',Consolas,'Courier New',monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0d1117; --panel:#151b23; --panel2:#1c2530; --border:#2a3441;
+      --text:#e6edf3; --text-dim:#8b98a5; --accent:#f0a838; --accent-dim:#7a5620;
+      --accent-text:#1a1000;
+      --good:#3fb950; --good-bg:#0f2a17; --bad:#f85149; --bad-bg:#2d1214;
+      --warn:#d29922; --warn-bg:#2b2109;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0d1117; --panel:#151b23; --panel2:#1c2530; --border:#2a3441;
+    --text:#e6edf3; --text-dim:#8b98a5; --accent:#f0a838; --accent-dim:#7a5620;
+    --accent-text:#1a1000;
+    --good:#3fb950; --good-bg:#0f2a17; --bad:#f85149; --bad-bg:#2d1214;
+    --warn:#d29922; --warn-bg:#2b2109;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:14px;}
+  .wrap{max-width:1400px;margin:0 auto;padding:16px 20px 60px;}
+  h1{font-size:18px;font-weight:600;margin:0 0 4px;letter-spacing:.2px;}
+  .sub{color:var(--text-dim);font-size:12px;margin-bottom:18px;}
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:18px;}
+  .tab{padding:10px 16px;cursor:pointer;color:var(--text-dim);font-size:13px;font-weight:500;border-bottom:2px solid transparent;user-select:none;}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .tab:hover{color:var(--text);}
+  .panel{display:none;}
+  .panel.active{display:block;}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;}
+  label{display:block;font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+  textarea{width:100%;min-height:140px;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:10px;font-family:var(--mono);font-size:12px;resize:vertical;}
+  input[type=text],select{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:9px 10px;font-size:14px;}
+  select{cursor:pointer;}
+  button{background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent-dim);border-radius:6px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;}
+  button:hover{background:var(--accent);color:var(--accent-text);}
+  button.ghost{background:transparent;color:var(--text-dim);border:1px solid var(--border);}
+  button.ghost:hover{background:var(--panel2);color:var(--text);}
+  button:disabled{opacity:.4;cursor:not-allowed;}
+  .theme-toggle{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));right:14px;z-index:20;padding:7px 12px;font-size:12px;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th{text-align:left;color:var(--text-dim);font-weight:600;text-transform:uppercase;font-size:10.5px;letter-spacing:.4px;padding:8px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--panel);}
+  td{padding:8px 10px;border-bottom:1px solid var(--border);}
+  tr:hover td{background:var(--panel2);}
+  .tablewrap{max-height:520px;overflow:auto;border:1px solid var(--border);border-radius:6px;}
+  .mono{font-family:var(--mono);}
+  .pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;}
+  .pill-ok{background:var(--good-bg);color:var(--good);}
+  .pill-bad{background:var(--bad-bg);color:var(--bad);}
+  .pill-warn{background:var(--warn-bg);color:var(--warn);}
+  .pill-dim{background:var(--panel2);color:var(--text-dim);}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px;}
+  .stat{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px 14px;}
+  .stat .n{font-size:22px;font-weight:700;}
+  .stat .l{font-size:10.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.4px;margin-top:2px;}
+  .scanbox{font-size:20px;padding:14px 16px;width:100%;font-family:var(--mono);letter-spacing:.5px;}
+  .flash-good{animation:flashg .5s;}
+  .flash-bad{animation:flashb .5s;}
+  @keyframes flashg{0%{background:var(--good-bg);}100%{background:var(--panel2);}}
+  @keyframes flashb{0%{background:var(--bad-bg);}100%{background:var(--panel2);}}
+  .empty{color:var(--text-dim);text-align:center;padding:40px 20px;font-size:13px;}
+  .hint{color:var(--text-dim);font-size:11.5px;margin-top:6px;line-height:1.5;}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+  .badge-count{background:var(--panel2);color:var(--text-dim);border-radius:20px;padding:2px 8px;font-size:11px;margin-left:6px;}
+  .log{max-height:200px;overflow:auto;font-family:var(--mono);font-size:11.5px;color:var(--text-dim);}
+  .log div{padding:3px 0;border-bottom:1px solid var(--border);}
+  .edit-qty-input{width:60px;background:var(--bg);color:var(--text);border:1px solid var(--accent);border-radius:4px;padding:3px 6px;font-family:var(--mono);font-size:12px;}
+  .filter-input{padding:6px 10px;font-size:12px;width:280px;}
+
+  /* Printable Sheet Styles */
+  #print-area{display:none;}
+  @media print{
+    body{background:#fff;color:#000;font-family:Arial,sans-serif;}
+    .wrap{display:none!important;}
+    #print-area{display:block!important;padding:20px;}
+    .print-header{display:flex;justify-content:space-between;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:15px;}
+    .print-header h2{margin:0 0 6px 0;font-size:20px;}
+    .print-route-info{display:flex;gap:30px;margin-bottom:20px;font-size:13px;background:#f9f9f9;padding:10px;border:1px solid #eee;}
+    .print-table{width:100%;border-collapse:collapse;margin-bottom:30px;}
+    .print-table th, .print-table td{border:1px solid #ccc;padding:8px;text-align:left;font-size:12px;}
+    .print-table th{background:#f2f2f2;}
+    .signatures{display:flex;justify-content:space-between;margin-top:50px;page-break-inside:avoid;}
+    .sig-box{width:45%;border-top:1px solid #000;padding-top:8px;}
+    .sig-box p{margin:4px 0;font-size:12px;}
+  }
+</style>
+
+</head>
+<body>
+
+<div id="print-area"></div>
+
+<button class="ghost theme-toggle" id="btn-theme-toggle" type="button">🌙 Night</button>
+
+<div class="wrap">
+  <h1>STO transfer &amp; scan tracker</h1>
+  <div class="sub">Paste STO + available qty from MSD, scan barcodes against the right STO, and see what's ready to post. Nothing here is saved to a server — data lives in this browser tab only, so export before you close it.</div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="setup">1. Load data</div>
+    <div class="tab" data-tab="scan">2. Scan</div>
+    <div class="tab" data-tab="summary">3. Summary</div>
+  </div>
+
+  <!-- SETUP -->
+  <div class="panel active" id="panel-setup">
+    <div class="card">
+      <label>Load directly from Google Sheet</label>
+      <div class="row">
+        <input type="text" id="sheet-url" style="flex:1;min-width:320px;" placeholder="Paste your Apps Script Web App URL here (ends in /exec)" value="https://script.google.com/macros/s/AKfycbwboo0lDWPZenL3MK6VZLi30q_-yCUgKSKPEkRzS2FEZQbU-1T2thxEB6MgFDM3qGnP/exec">
+        <button id="btn-load-sheet">Load from Google Sheet</button>
+      </div>
+      <div class="hint" id="sheet-status">Pulls the STO tab and Available Qty tab in one click. Requires the Apps Script Web App to be deployed first (one-time setup).</div>
+    </div>
+
+    <div class="card">
+      <label>Or paste STO data manually (fallback — Transfer number, Item number, Variant number, Search name, Barcode, Brand, Size, Color, Version, Transfer quantity, Product name — tab separated, first row = headers)</label>
+      <textarea id="ta-sto" placeholder="Paste your STO export here, headers included..."></textarea>
+      <div class="row" style="margin-top:10px;">
+        <button id="btn-load-sto">Load STO data</button>
+        <button class="ghost" id="btn-clear-sto">Clear</button>
+        <span class="hint" id="sto-status"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <label>Or paste available qty manually (fallback — STO, Item number, Size, Ship quantity — tab separated, first row = headers)</label>
+      <textarea id="ta-avail" placeholder="Paste your available qty export here, headers included..."></textarea>
+      <div class="row" style="margin-top:10px;">
+        <button id="btn-load-avail">Load available qty</button>
+        <button class="ghost" id="btn-clear-avail">Clear</button>
+        <span class="hint" id="avail-status"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <label>Loaded STOs</label>
+      <div id="loaded-summary" class="hint">No data loaded yet.</div>
+    </div>
+  </div>
+
+  <!-- SCAN -->
+  <div class="panel" id="panel-scan">
+    <div class="card">
+      <div class="row" style="margin-bottom:12px;">
+        <div>
+          <label>STO to scan</label>
+          <select id="sel-sto" style="min-width:200px;"></select>
+        </div>
+        <div>
+          <label>From Location / Plant</label>
+          <input type="text" id="input-from-plant" placeholder="e.g. Whse A" style="width:160px;">
+        </div>
+        <div>
+          <label>To Location / Plant</label>
+          <input type="text" id="input-to-plant" placeholder="e.g. Whse B" style="width:160px;">
+        </div>
+        <button class="ghost" id="btn-print-sto">Print STO Receipt</button>
+      </div>
+
+      <div class="row">
+        <div style="flex:1;min-width:260px;">
+          <label>Scan barcode &amp; press enter</label>
+          <input type="text" id="scan-input" class="scanbox" placeholder="Scan or type barcode here" autocomplete="off">
+        </div>
+        <button class="ghost" id="btn-undo">Undo last scan</button>
+        <label style="display:flex;align-items:center;gap:6px;text-transform:none;font-size:12px;color:var(--text-dim);margin:0;"><input type="checkbox" id="chk-sound" checked style="width:auto;">Sound</label>
+        <label style="display:flex;align-items:center;gap:6px;text-transform:none;font-size:12px;color:var(--text-dim);margin:0;"><input type="checkbox" id="chk-live-sync" checked style="width:auto;">Live sync to Sheet</label>
+        <span class="hint sync-status" style="margin:0;">&nbsp;</span>
+      </div>
+      <div id="scan-feedback" class="hint">&nbsp;</div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <div>
+          Items on <b id="scan-sto-label">—</b><span class="badge-count" id="scan-item-count"></span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input type="text" id="input-filter" class="filter-input" placeholder="Filter by Barcode, Item, Variant, Search, Brand, Size...">
+          <button class="ghost" id="btn-toggle-edit">Edit Scanned Quantities</button>
+        </div>
+      </div>
+      <div class="tablewrap">
+        <table id="scan-table">
+          <thead><tr>
+            <th>Barcode</th><th>Item</th><th>Variant</th><th>Search Name</th><th>Brand</th><th>Product</th><th>Size</th><th>Color</th>
+            <th>Transfer qty</th><th>Available</th><th>Scanned</th><th>Balance</th><th>Status</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <label>Scan log (most recent first)</label>
+      <div class="log" id="scan-log"><div class="empty">No scans yet.</div></div>
+    </div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="panel" id="panel-summary">
+    <div class="stats" id="summary-stats"></div>
+    <div class="card">
+      <div class="toolbar">
+        <div>All STOs</div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <span class="hint sync-status">&nbsp;</span>
+          <button class="ghost" id="btn-sync-sheet">Sync all to Google Sheet</button>
+          <button class="ghost" id="btn-export">Export scan results (CSV)</button>
+        </div>
+      </div>
+      <div class="tablewrap">
+        <table id="summary-table">
+          <thead><tr>
+            <th>Transfer order</th><th>Transfer qty</th><th>Available qty</th><th>Scanned qty</th><th>Balance</th><th>Status</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var state = { stoRows: [], availMap: {}, scans: [], isEditing: false, stoLocations: {} };
+  var qsel = function(s,el){ return (el||document).querySelector(s); };
+
+  function normalizeBarcode(code){
+    if(!code) return '';
+    return String(code).trim().replace(/^0+/, '');
+  }
+
+  var audioCtx = null;
+  function getCtx(){
+    if(!audioCtx){
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if(AC) audioCtx = new AC();
+    }
+    return audioCtx;
+  }
+  function tone(freq, startTime, duration, gainPeak){
+    var ctx = getCtx();
+    if(!ctx) return;
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(freq, startTime);
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(gainPeak, startTime+0.005);
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime+duration);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(startTime); osc.stop(startTime+duration+0.02);
+  }
+  function soundOn(){
+    var chk = document.getElementById('chk-sound');
+    return !chk || chk.checked;
+  }
+  function beepGood(){
+    if(!soundOn()) return;
+    var ctx = getCtx();
+    if(!ctx) return;
+    if(ctx.state==='suspended') ctx.resume();
+    tone(1568, ctx.currentTime, 0.09, 0.18);
+  }
+  function beepBad(){
+    if(!soundOn()) return;
+    var ctx = getCtx();
+    if(!ctx) return;
+    if(ctx.state==='suspended') ctx.resume();
+    tone(220, ctx.currentTime, 0.14, 0.2);
+    tone(180, ctx.currentTime+0.15, 0.16, 0.2);
+  }
+
+  function parsePasted(text){
+    var lines = text.replace(/\r/g,'').split('\n').filter(function(l){ return l.trim().length; });
+    if(!lines.length) return {headers:[], rows:[]};
+    var headers = lines[0].split('\t').map(function(h){ return h.trim().toLowerCase(); });
+    var rows = lines.slice(1).map(function(l){
+      var cells = l.split('\t');
+      var o = {};
+      headers.forEach(function(h,i){ o[h] = (cells[i]||'').trim(); });
+      return o;
+    });
+    return {headers:headers, rows:rows};
+  }
+
+  function findKey(headers, candidates){
+    for(var i=0;i<candidates.length;i++){
+      var idx = headers.indexOf(candidates[i]);
+      if(idx>-1) return headers[idx];
+    }
+    return null;
+  }
+
+  function loadSTOFromParsed(parsed, sourceLabel){
+    if(!parsed.rows.length){ qsel('#sto-status').textContent = 'No STO rows found.'; return false; }
+    var h = parsed.headers;
+    var kTransfer = findKey(h,['transfer number','sto','transfer order']);
+    var kItem = findKey(h,['item number','item']);
+    var kVariant = findKey(h,['variant number','variant']);
+    var kSearch = findKey(h,['search name']);
+    var kBarcode = findKey(h,['barcode','upc']);
+    var kBrand = findKey(h,['brand']);
+    var kSize = findKey(h,['size']);
+    var kColor = findKey(h,['color']);
+    var kVersion = findKey(h,['version']);
+    var kQty = findKey(h,['transfer quantity','qty','quantity']);
+    var kProduct = findKey(h,['product name','description']);
+    if(!kTransfer || !kBarcode || !kQty){
+      qsel('#sto-status').textContent = 'Could not find required columns (Transfer number, Barcode, Transfer quantity). Check your headers.';
+      return false;
+    }
+    state.stoRows = parsed.rows.map(function(r){
+      return {
+        transfer: r[kTransfer], 
+        item: kItem? r[kItem]:'', 
+        variant: kVariant? r[kVariant]:'',
+        search: kSearch? r[kSearch]:'',
+        barcode: r[kBarcode], 
+        brand: kBrand? r[kBrand]:'', 
+        size: kSize? r[kSize]:'',
+        color: kColor? r[kColor]:'', 
+        version: kVersion? r[kVersion]:'',
+        qty: parseFloat(r[kQty])||0, 
+        product: kProduct? r[kProduct]:''
+      };
+    }).filter(function(r){ return r.transfer && r.barcode; });
+    qsel('#sto-status').textContent = state.stoRows.length + ' rows loaded across ' + uniqueSTOs().length + ' STO(s)' + (sourceLabel? ' — '+sourceLabel : '') + '.';
+    refreshAll();
+    return true;
+  }
+
+  function loadSTO(){
+    var text = qsel('#ta-sto').value;
+    var parsed = parsePasted(text);
+    if(!parsed.rows.length){ qsel('#sto-status').textContent = 'Paste data first.'; return; }
+    loadSTOFromParsed(parsed);
+  }
+
+  function loadAvailFromParsed(parsed, sourceLabel){
+    if(!parsed.rows.length){ qsel('#avail-status').textContent = 'No available-qty rows found.'; return false; }
+    var h = parsed.headers;
+    var kSTO = findKey(h,['sto','transfer number','transfer order']);
+    var kItem = findKey(h,['item number','item']);
+    var kSize = findKey(h,['size']);
+    var kQty = findKey(h,['ship quantity','available qty','qty']);
+    if(!kSTO || !kQty){
+      qsel('#avail-status').textContent = 'Could not find required columns (STO, Ship quantity). Check your headers.';
+      return false;
+    }
+    var map = {};
+    parsed.rows.forEach(function(r){
+      var key = r[kSTO] + '|' + (kItem? r[kItem]:'') + '|' + (kSize? r[kSize]:'');
+      map[key] = parseFloat(r[kQty])||0;
+    });
+    state.availMap = map;
+    qsel('#avail-status').textContent = parsed.rows.length + ' available-qty rows loaded' + (sourceLabel? ' — '+sourceLabel : '') + '.';
+    refreshAll();
+    return true;
+  }
+
+  function loadAvail(){
+    var text = qsel('#ta-avail').value;
+    var parsed = parsePasted(text);
+    if(!parsed.rows.length){ qsel('#avail-status').textContent = 'Paste data first.'; return; }
+    loadAvailFromParsed(parsed);
+  }
+
+  function normalizeHeader(h){ return String(h).trim().toLowerCase(); }
+
+  // Converts an array of row objects (as returned by the Apps Script JSON endpoint,
+  // keyed by original sheet header text) into the {headers, rows} shape that
+  // loadSTOFromParsed / loadAvailFromParsed expect (same shape parsePasted() produces).
+  function objectsToParsedShape(rows){
+    if(!rows || !rows.length) return {headers:[], rows:[]};
+    var headers = Object.keys(rows[0]).map(normalizeHeader);
+    var outRows = rows.map(function(r){
+      var o = {};
+      Object.keys(r).forEach(function(k){
+        var v = r[k];
+        o[normalizeHeader(k)] = (v===null || v===undefined) ? '' : String(v).trim();
+      });
+      return o;
+    });
+    return {headers:headers, rows:outRows};
+  }
+
+  function currentSheetUrl(){ return qsel('#sheet-url').value.trim(); }
+
+  function setSyncStatus(text){
+    document.querySelectorAll('.sync-status').forEach(function(el){ el.textContent = text; });
+  }
+
+  function itemLevelRow(r){
+    var avail = availFor(r);
+    var scanned = scannedCount(r.transfer, r.barcode);
+    var balance = avail - scanned;
+    var status;
+    if(avail===0 && scanned===0) status='No stock';
+    else if(scanned>avail) status='OVER-SCAN';
+    else if(scanned===0) status='Not scanned';
+    else if(balance<=0) status='Fully scanned';
+    else status='Partial';
+    return {
+      'Transfer number': r.transfer, 'Item number': r.item, 'Variant number': r.variant,
+      'Search name': r.search, 'Barcode': r.barcode, 'Brand': r.brand, 'Product': r.product,
+      'Size': r.size, 'Color': r.color, 'Transfer qty': r.qty, 'Available qty': avail,
+      'Scanned qty': scanned, 'Balance': balance, 'Status': status,
+      'Last updated': new Date().toLocaleString()
+    };
+  }
+
+  function postToSheet(action, rows){
+    var url = currentSheetUrl();
+    if(!url) return Promise.reject(new Error('No Google Sheet URL set.'));
+    return fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain;charset=utf-8'}, // avoids CORS preflight against Apps Script
+      body: JSON.stringify({action: action, rows: rows})
+    }).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); });
+  }
+
+  function liveSyncEnabled(){
+    var chk = qsel('#chk-live-sync');
+    return !!(chk && chk.checked && currentSheetUrl());
+  }
+
+  function syncItemLive(transfer, barcode){
+    if(!liveSyncEnabled()) return;
+    var row = state.stoRows.filter(function(r){ return r.transfer===transfer && r.barcode===barcode; })[0];
+    if(!row) return;
+    postToSheet('upsert', [itemLevelRow(row)])
+      .then(function(){ setSyncStatus('Synced ' + new Date().toLocaleTimeString()); })
+      .catch(function(err){ setSyncStatus('Live sync failed: ' + err.message); });
+  }
+
+  function syncAllToSheet(){
+    if(!currentSheetUrl()){ setSyncStatus('Paste your Apps Script Web App URL on the Load data tab first.'); return; }
+    setSyncStatus('Syncing…');
+    postToSheet('replaceAll', state.stoRows.map(itemLevelRow))
+      .then(function(){ setSyncStatus('All items synced to Google Sheet at ' + new Date().toLocaleTimeString() + '.'); })
+      .catch(function(err){ setSyncStatus('Sync failed: ' + err.message); });
+  }
+
+  function loadFromGoogleSheet(){
+    var url = qsel('#sheet-url').value.trim();
+    var statusEl = qsel('#sheet-status');
+    var btn = qsel('#btn-load-sheet');
+    if(!url){ statusEl.textContent = 'Paste your Apps Script Web App URL first.'; return; }
+    statusEl.textContent = 'Loading…';
+    btn.disabled = true;
+    fetch(url)
+      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(function(data){
+        var stoOk = loadSTOFromParsed(objectsToParsedShape(data.sto || []), 'Google Sheet');
+        var availOk = loadAvailFromParsed(objectsToParsedShape(data.avail || []), 'Google Sheet');
+        var when = new Date().toLocaleTimeString();
+        if(stoOk && availOk){
+          statusEl.textContent = 'Loaded from Google Sheet at ' + when + '.';
+        } else {
+          statusEl.textContent = 'Loaded with issues — check the STO / Available qty status messages below.';
+        }
+      })
+      .catch(function(err){
+        statusEl.textContent = 'Error loading sheet: ' + err.message + '. Check the URL and that the Apps Script is deployed with access set to "Anyone".';
+      })
+      .finally(function(){
+        btn.disabled = false;
+      });
+  }
+
+  function uniqueSTOs(){
+    var seen = {}, out = [];
+    state.stoRows.forEach(function(r){ if(!seen[r.transfer]){ seen[r.transfer]=1; out.push(r.transfer); } });
+    return out;
+  }
+
+  function availFor(row){
+    var key = row.transfer + '|' + row.item + '|' + row.size;
+    if(state.availMap.hasOwnProperty(key)) return state.availMap[key];
+    return 0;
+  }
+
+  function scannedCount(transfer, barcode){
+    var n=0;
+    var normTarget = normalizeBarcode(barcode);
+    state.scans.forEach(function(s){ 
+      if(s.transfer===transfer && normalizeBarcode(s.barcode)===normTarget) n++; 
+    });
+    return n;
+  }
+
+  function setManualScannedCount(transfer, barcode, count){
+    var normTarget = normalizeBarcode(barcode);
+    state.scans = state.scans.filter(function(s){
+      return !(s.transfer === transfer && normalizeBarcode(s.barcode) === normTarget);
+    });
+    for(var i = 0; i < count; i++){
+      state.scans.push({
+        transfer: transfer,
+        barcode: barcode,
+        time: new Date().toLocaleTimeString(),
+        result: 'Manual Edit'
+      });
+    }
+    refreshScanTable();
+    refreshScanLog();
+    refreshSummary();
+    syncItemLive(transfer, barcode);
+  }
+
+  function refreshLoadedSummary(){
+    var el = qsel('#loaded-summary');
+    if(!state.stoRows.length){ el.textContent = 'No data loaded yet.'; return; }
+    var stos = uniqueSTOs();
+    var haveAvail = Object.keys(state.availMap).length > 0;
+    el.innerHTML = stos.map(function(s){
+      var n = state.stoRows.filter(function(r){ return r.transfer===s; }).length;
+      return '<div>' + s + ' — ' + n + ' line(s)</div>';
+    }).join('') + (haveAvail? '' : '<div style="color:var(--warn);margin-top:6px;">Available qty not loaded — missing SKUs default to 0.</div>');
+  }
+
+  function refreshSTOSelect(){
+    var sel = qsel('#sel-sto');
+    var cur = sel.value;
+    var stos = uniqueSTOs();
+    sel.innerHTML = stos.map(function(s){ return '<option value="'+s+'">'+s+'</option>'; }).join('');
+    if(stos.indexOf(cur)>-1) sel.value = cur;
+    updateLocationInputs();
+  }
+
+  function currentSTO(){ return qsel('#sel-sto').value; }
+
+  function updateLocationInputs(){
+    var sto = currentSTO();
+    if(!sto) return;
+    if(!state.stoLocations[sto]){
+      state.stoLocations[sto] = { from: '', to: '' };
+    }
+    qsel('#input-from-plant').value = state.stoLocations[sto].from || '';
+    qsel('#input-to-plant').value = state.stoLocations[sto].to || '';
+  }
+
+  function saveLocationInputs(){
+    var sto = currentSTO();
+    if(!sto) return;
+    if(!state.stoLocations[sto]){
+      state.stoLocations[sto] = {};
+    }
+    state.stoLocations[sto].from = qsel('#input-from-plant').value;
+    state.stoLocations[sto].to = qsel('#input-to-plant').value;
+  }
+
+  function refreshScanTable(){
+    var sto = currentSTO();
+    qsel('#scan-sto-label').textContent = sto || '—';
+    var rows = state.stoRows.filter(function(r){ return r.transfer===sto; });
+    
+    var filterTerm = (qsel('#input-filter').value || '').trim().toLowerCase();
+    if(filterTerm){
+      rows = rows.filter(function(r){
+        return (r.transfer || '').toLowerCase().includes(filterTerm) ||
+               (r.variant || '').toLowerCase().includes(filterTerm) ||
+               (r.item || '').toLowerCase().includes(filterTerm) ||
+               (r.search || '').toLowerCase().includes(filterTerm) ||
+               (r.barcode || '').toLowerCase().includes(filterTerm) ||
+               (r.brand || '').toLowerCase().includes(filterTerm) ||
+               (r.size || '').toLowerCase().includes(filterTerm);
+      });
+    }
+
+    qsel('#scan-item-count').textContent = rows.length + ' items';
+    var tbody = qsel('#scan-table tbody');
+    if(!rows.length){ tbody.innerHTML = '<tr><td colspan="13" class="empty">No matching items found.</td></tr>'; return; }
+    
+    tbody.innerHTML = rows.map(function(r){
+      var avail = availFor(r);
+      var scanned = scannedCount(r.transfer, r.barcode);
+      var balance = avail - scanned;
+      var status, cls;
+      
+      if(avail===0 && scanned===0){ status='No stock'; cls='pill-dim'; }
+      else if(scanned>avail){ status='OVER-SCAN'; cls='pill-bad'; }
+      else if(scanned===0){ status='Not scanned'; cls='pill-dim'; }
+      else if(balance<=0){ status='Fully scanned'; cls='pill-ok'; }
+      else { status='Partial'; cls='pill-warn'; }
+
+      var scannedCellHTML = state.isEditing ? 
+        '<input type="number" min="0" class="edit-qty-input" data-barcode="'+r.barcode+'" value="'+scanned+'">' : 
+        scanned;
+
+      return '<tr>'+
+        '<td class="mono">'+r.barcode+'</td>'+
+        '<td class="mono">'+r.item+'</td>'+
+        '<td class="mono">'+(r.variant||'—')+'</td>'+
+        '<td>'+(r.search||'—')+'</td>'+
+        '<td>'+(r.brand||'—')+'</td>'+
+        '<td>'+r.product+'</td>'+
+        '<td>'+r.size+'</td>'+
+        '<td>'+r.color+'</td>'+
+        '<td>'+r.qty+'</td>'+
+        '<td>'+avail+'</td>'+
+        '<td>'+scannedCellHTML+'</td>'+
+        '<td>'+balance+'</td>'+
+        '<td><span class="pill '+cls+'">'+status+'</span></td>'+
+      '</tr>';
+    }).join('');
+
+    if(state.isEditing){
+      tbody.querySelectorAll('.edit-qty-input').forEach(function(input){
+        input.addEventListener('change', function(e){
+          var newCount = parseInt(e.target.value, 10) || 0;
+          var bc = e.target.getAttribute('data-barcode');
+          setManualScannedCount(sto, bc, newCount);
+        });
+      });
+    }
+  }
+
+  function refreshScanLog(){
+    var el = qsel('#scan-log');
+    if(!state.scans.length){ el.innerHTML='<div class="empty">No scans yet.</div>'; return; }
+    var items = state.scans.slice().reverse().slice(0,100);
+    el.innerHTML = items.map(function(s){
+      return '<div>'+s.time+' &nbsp;·&nbsp; '+s.transfer+' &nbsp;·&nbsp; '+s.barcode+' &nbsp;·&nbsp; '+s.result+'</div>';
+    }).join('');
+  }
+
+  function refreshSummary(){
+    var stos = uniqueSTOs();
+    var totalTransfer=0, totalAvail=0, totalScanned=0, readyCount=0;
+    var tbody = qsel('#summary-table tbody');
+    if(!stos.length){ tbody.innerHTML='<tr><td colspan="6" class="empty">No STO data loaded.</td></tr>'; }
+    else{
+      tbody.innerHTML = stos.map(function(sto){
+        var rows = state.stoRows.filter(function(r){ return r.transfer===sto; });
+        var tq=0, aq=0, sq=0;
+        rows.forEach(function(r){
+          tq += r.qty;
+          var a = availFor(r);
+          aq += a;
+          sq += scannedCount(r.transfer, r.barcode);
+        });
+        var bal = aq - sq;
+        var status, cls;
+        if(aq===0 && sq===0){ status='No stock'; cls='pill-dim'; }
+        else if(bal<=0){ status='Ready to post'; cls='pill-ok'; readyCount++; }
+        else { status='In progress'; cls='pill-warn'; }
+        totalTransfer+=tq; totalAvail+=aq; totalScanned+=sq;
+        return '<tr><td>'+sto+'</td><td>'+tq+'</td><td>'+aq+'</td><td>'+sq+'</td><td>'+bal+'</td><td><span class="pill '+cls+'">'+status+'</span></td></tr>';
+      }).join('');
+    }
+    qsel('#summary-stats').innerHTML = [
+      ['STOs loaded', stos.length],
+      ['Ready to post', readyCount],
+      ['Total transfer qty', totalTransfer],
+      ['Total available qty', totalAvail],
+      ['Total scanned', totalScanned]
+    ].map(function(p){ return '<div class="stat"><div class="n">'+p[1]+'</div><div class="l">'+p[0]+'</div></div>'; }).join('');
+  }
+
+  function printSTOReceipt(){
+    var sto = currentSTO();
+    if(!sto) return;
+    var rows = state.stoRows.filter(function(r){ return r.transfer===sto; });
+    var printArea = qsel('#print-area');
+
+    var locs = state.stoLocations[sto] || {};
+    var fromPlant = locs.from || '—';
+    var toPlant = locs.to || '—';
+
+    var totShipped = 0;
+    var tableRows = '';
+    
+    rows.forEach(function(r){
+      var scanned = scannedCount(r.transfer, r.barcode);
+      if(scanned > 0){
+        totShipped += scanned;
+        tableRows += '<tr>'+
+          '<td>'+r.barcode+'</td>'+
+          '<td>'+(r.search || '—')+'</td>'+
+          '<td>'+r.product+'</td>'+
+          '<td>'+r.size+' / '+r.color+'</td>'+
+          '<td>'+scanned+'</td>'+
+        '</tr>';
+      }
+    });
+
+    if(!tableRows){
+      tableRows = '<tr><td colspan="5" style="text-align:center;">No scanned items to print.</td></tr>';
+    }
+
+    printArea.innerHTML = 
+      '<div class="print-header">'+
+        '<div><h2>STO Handover &amp; Verification Sheet</h2><div>STO Order #: <b>'+sto+'</b></div></div>'+
+        '<div>Date: <b>'+new Date().toLocaleDateString()+'</b></div>'+
+      '</div>'+
+      '<div class="print-route-info">'+
+        '<div>From Location: <b>'+fromPlant+'</b></div>'+
+        '<div>To Location: <b>'+toPlant+'</b></div>'+
+      '</div>'+
+      '<table class="print-table">'+
+        '<thead><tr><th>Barcode</th><th>Search Name</th><th>Product</th><th>Size/Color</th><th>Shipped Qty</th></tr></thead>'+
+        '<tbody>'+tableRows+'</tbody>'+
+        '<tfoot><tr><th colspan="4">Total Shipped Quantity</th><th>'+totShipped+'</th></tr></tfoot>'+
+      '</table>'+
+      '<div class="signatures">'+
+        '<div class="sig-box"><p><b>Handed Over By (Sender):</b></p><br><p>Name: _______________________</p><br><p>Signature: ___________________</p><br><p>Date: ________________________</p></div>'+
+        '<div class="sig-box"><p><b>Received By (Receiver):</b></p><br><p>Name: _______________________</p><br><p>Signature: ___________________</p><br><p>Date: ________________________</p></div>'+
+      '</div>';
+
+    window.print();
+  }
+
+  function refreshAll(){
+    refreshLoadedSummary();
+    refreshSTOSelect();
+    refreshScanTable();
+    refreshScanLog();
+    refreshSummary();
+  }
+
+  function doScan(barcode){
+    barcode = barcode.trim();
+    if(!barcode) return;
+    var sto = currentSTO();
+    var fb = qsel('#scan-feedback');
+    if(!sto){ fb.textContent = 'Select an STO first.'; return; }
+    
+    var normInput = normalizeBarcode(barcode);
+    var match = state.stoRows.filter(function(r){ 
+      return r.transfer===sto && normalizeBarcode(r.barcode)===normInput; 
+    })[0];
+    
+    var result;
+    if(!match){
+      result = 'Not on this STO';
+      fb.innerHTML = '<span class="pill pill-bad">Not on this STO</span> — check the STO selector or the barcode.';
+      qsel('#scan-input').parentElement.classList.remove('flash-good');
+      void qsel('#scan-input').offsetWidth;
+      qsel('#scan-input').parentElement.classList.add('flash-bad');
+      beepBad();
+    } else {
+      var avail = availFor(match);
+      var before = scannedCount(sto, match.barcode);
+      state.scans.push({transfer:sto, barcode:barcode, time:new Date().toLocaleTimeString()});
+      var after = before+1;
+      if(after>avail){
+        result = 'OVER-SCAN (' + after + ' of ' + avail + ')';
+        fb.innerHTML = '<span class="pill pill-bad">OVER-SCAN</span> — scanned '+after+' but only '+avail+' available for '+match.product+'.';
+        beepBad();
+      } else {
+        result = 'OK';
+        fb.innerHTML = '<span class="pill pill-ok">Scanned</span> '+match.product+' ('+match.size+' / '+match.color+') — '+after+' of '+avail+'.';
+        beepGood();
+      }
+    }
+    if(match){
+      state.scans[state.scans.length-1].result = result;
+    } else {
+      state.scans.push({transfer:sto, barcode:barcode, time:new Date().toLocaleTimeString(), result:result});
+    }
+    refreshScanTable();
+    refreshScanLog();
+    refreshSummary();
+    if(match) syncItemLive(sto, match.barcode);
+  }
+
+  function undoLast(){
+    if(!state.scans.length) return;
+    var removed = state.scans.pop();
+    refreshScanTable();
+    refreshScanLog();
+    refreshSummary();
+    if(removed && removed.result !== 'Not on this STO') syncItemLive(removed.transfer, removed.barcode);
+  }
+
+  function exportCSV(){
+    var rows = [['Transfer number','Item number','Variant number','Search name','Barcode','Brand','Product','Size','Color','Transfer qty','Available qty','Scanned qty','Balance','Status']];
+    state.stoRows.forEach(function(r){
+      var avail = availFor(r);
+      var scanned = scannedCount(r.transfer, r.barcode);
+      var balance = avail - scanned;
+      var status;
+      if(avail===0 && scanned===0) status='No stock';
+      else if(scanned>avail) status='OVER-SCAN';
+      else if(scanned===0) status='Not scanned';
+      else if(balance<=0) status='Fully scanned';
+      else status='Partial';
+      rows.push([r.transfer,r.item,r.variant,r.search,r.barcode,r.brand,r.product,r.size,r.color,r.qty,avail,scanned,balance,status]);
+    });
+    var csv = rows.map(function(row){
+      return row.map(function(c){ var s=String(c==null?'':c); return /[",\n]/.test(s)? '"'+s.replace(/"/g,'""')+'"' : s; }).join(',');
+    }).join('\n');
+    var blob = new Blob([csv], {type:'text/csv'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'sto-scan-results.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function applyStoredTheme(){
+    var saved = null;
+    try{ saved = localStorage.getItem('sto-theme'); }catch(e){}
+    var btn = qsel('#btn-theme-toggle');
+    if(saved === 'light' || saved === 'dark'){
+      document.documentElement.setAttribute('data-theme', saved);
+    }
+    var isDark = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim().toLowerCase() !== '#f5f3ee';
+    if(btn) btn.textContent = isDark ? '☀️ Day' : '🌙 Night';
+  }
+  qsel('#btn-theme-toggle').addEventListener('click', function(){
+    var current = document.documentElement.getAttribute('data-theme');
+    var isDark = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim().toLowerCase() !== '#f5f3ee';
+    var next = isDark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try{ localStorage.setItem('sto-theme', next); }catch(e){}
+    this.textContent = next === 'dark' ? '☀️ Day' : '🌙 Night';
+  });
+  applyStoredTheme();
+
+  document.querySelectorAll('.tab').forEach(function(t){
+    t.addEventListener('click', function(){
+      document.querySelectorAll('.tab').forEach(function(x){ x.classList.remove('active'); });
+      document.querySelectorAll('.panel').forEach(function(x){ x.classList.remove('active'); });
+      t.classList.add('active');
+      qsel('#panel-'+t.dataset.tab).classList.add('active');
+      if(t.dataset.tab==='scan'){ refreshScanTable(); qsel('#scan-input').focus(); }
+      if(t.dataset.tab==='summary'){ refreshSummary(); }
+    });
+  });
+
+  qsel('#btn-load-sheet').addEventListener('click', loadFromGoogleSheet);
+  qsel('#btn-load-sto').addEventListener('click', loadSTO);
+  qsel('#btn-load-avail').addEventListener('click', loadAvail);
+  qsel('#btn-clear-sto').addEventListener('click', function(){ qsel('#ta-sto').value=''; qsel('#sto-status').textContent=''; });
+  qsel('#btn-clear-avail').addEventListener('click', function(){ qsel('#ta-avail').value=''; qsel('#avail-status').textContent=''; });
+  
+  qsel('#sel-sto').addEventListener('change', function(){
+    updateLocationInputs();
+    refreshScanTable();
+  });
+
+  qsel('#input-from-plant').addEventListener('input', saveLocationInputs);
+  qsel('#input-to-plant').addEventListener('input', saveLocationInputs);
+
+  qsel('#scan-input').addEventListener('keydown', function(e){
+    if(e.key==='Enter'){ doScan(e.target.value); e.target.value=''; }
+  });
+  qsel('#btn-undo').addEventListener('click', undoLast);
+  qsel('#btn-export').addEventListener('click', exportCSV);
+  qsel('#btn-sync-sheet').addEventListener('click', syncAllToSheet);
+  qsel('#btn-print-sto').addEventListener('click', printSTOReceipt);
+  
+  qsel('#input-filter').addEventListener('input', refreshScanTable);
+
+  qsel('#btn-toggle-edit').addEventListener('click', function(){
+    state.isEditing = !state.isEditing;
+    this.textContent = state.isEditing ? 'Done Editing' : 'Edit Scanned Quantities';
+    this.classList.toggle('ghost', !state.isEditing);
+    refreshScanTable();
+  });
+
+  refreshAll();
+  if(currentSheetUrl()){ loadFromGoogleSheet(); }
+})();
+</script>
+</body>
+</html>
