@@ -6,27 +6,11 @@
 <title>STO Transfer Tracker</title>
 <style>
   :root{
-    --bg:#f5f3ee; --panel:#ffffff; --panel2:#f0ede5; --border:#dcd6c8;
-    --text:#242118; --text-dim:#756f60; --accent:#b5701c; --accent-dim:#f0dcb8;
-    --accent-text:#3a2205;
-    --good:#1d8a3f; --good-bg:#e3f5e6; --bad:#c62a25; --bad-bg:#fbe4e2;
-    --warn:#9a6a05; --warn-bg:#faf0d6; --mono:'SF Mono',Consolas,'Courier New',monospace;
-  }
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]){
-      --bg:#0d1117; --panel:#151b23; --panel2:#1c2530; --border:#2a3441;
-      --text:#e6edf3; --text-dim:#8b98a5; --accent:#f0a838; --accent-dim:#7a5620;
-      --accent-text:#1a1000;
-      --good:#3fb950; --good-bg:#0f2a17; --bad:#f85149; --bad-bg:#2d1214;
-      --warn:#d29922; --warn-bg:#2b2109;
-    }
-  }
-  :root[data-theme="dark"]{
-    --bg:#0d1117; --panel:#151b23; --panel2:#1c2530; --border:#2a3441;
-    --text:#e6edf3; --text-dim:#8b98a5; --accent:#f0a838; --accent-dim:#7a5620;
-    --accent-text:#1a1000;
-    --good:#3fb950; --good-bg:#0f2a17; --bad:#f85149; --bad-bg:#2d1214;
-    --warn:#d29922; --warn-bg:#2b2109;
+    --bg:#eef2f8; --panel:#ffffff; --panel2:#f4f7fc; --border:#dbe3f0;
+    --text:#16213a; --text-dim:#5c6b85; --accent:#2f6fed; --accent-dim:#e4edff;
+    --accent-text:#ffffff;
+    --good:#12875e; --good-bg:#e3f8ee; --bad:#d92d3f; --bad-bg:#fdeaec;
+    --warn:#b76e00; --warn-bg:#fff2df; --mono:'SF Mono',Consolas,'Courier New',monospace;
   }
   *{box-sizing:border-box;}
   body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:14px;}
@@ -43,14 +27,16 @@
   .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;}
   label{display:block;font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
   textarea{width:100%;min-height:140px;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:10px;font-family:var(--mono);font-size:12px;resize:vertical;}
-  input[type=text],select{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:9px 10px;font-size:14px;}
+  input[type=text],input[type=password],select{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:9px 10px;font-size:14px;}
   select{cursor:pointer;}
   button{background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent-dim);border-radius:6px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;}
   button:hover{background:var(--accent);color:var(--accent-text);}
   button.ghost{background:transparent;color:var(--text-dim);border:1px solid var(--border);}
   button.ghost:hover{background:var(--panel2);color:var(--text);}
+  button.danger{color:var(--bad);border-color:var(--bad-bg);background:var(--bad-bg);}
+  button.danger:hover{background:var(--bad);color:#fff;}
   button:disabled{opacity:.4;cursor:not-allowed;}
-  .theme-toggle{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));right:14px;z-index:20;padding:7px 12px;font-size:12px;}
+  .topbar{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));right:14px;z-index:20;display:flex;align-items:center;gap:10px;}
   table{width:100%;border-collapse:collapse;font-size:12.5px;}
   th{text-align:left;color:var(--text-dim);font-weight:600;text-transform:uppercase;font-size:10.5px;letter-spacing:.4px;padding:8px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--panel);}
   td{padding:8px 10px;border-bottom:1px solid var(--border);}
@@ -80,11 +66,24 @@
   .edit-qty-input{width:60px;background:var(--bg);color:var(--text);border:1px solid var(--accent);border-radius:4px;padding:3px 6px;font-family:var(--mono);font-size:12px;}
   .filter-input{padding:6px 10px;font-size:12px;width:280px;}
 
+  /* Overlays: login / loading / resume-scan-decision */
+  .overlay{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;z-index:200;padding:20px;}
+  .overlay.show{display:flex;}
+  .auth-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:30px 32px;max-width:400px;width:100%;box-shadow:0 12px 34px rgba(22,33,58,.10);}
+  .auth-card h1{font-size:19px;margin-bottom:4px;}
+  .progress-track{width:100%;height:8px;background:var(--panel2);border-radius:4px;overflow:hidden;border:1px solid var(--border);margin-top:6px;}
+  .progress-fill{height:100%;background:var(--accent);width:4%;transition:width .35s ease;}
+  .loading-steps{margin-top:14px;font-size:12px;color:var(--text-dim);}
+  .loading-steps div{padding:3px 0;display:flex;align-items:center;gap:8px;}
+  .step-dot{width:7px;height:7px;border-radius:50%;background:var(--border);flex-shrink:0;}
+  .step-dot.done{background:var(--good);}
+  .step-dot.active{background:var(--accent);}
+
   /* Printable Sheet Styles */
   #print-area{display:none;}
   @media print{
     body{background:#fff;color:#000;font-family:Arial,sans-serif;}
-    .wrap{display:none!important;}
+    .wrap, .topbar{display:none!important;}
     #print-area{display:block!important;padding:20px;}
     .print-header{display:flex;justify-content:space-between;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:15px;}
     .print-header h2{margin:0 0 6px 0;font-size:20px;}
@@ -103,11 +102,53 @@
 
 <div id="print-area"></div>
 
-<button class="ghost theme-toggle" id="btn-theme-toggle" type="button">🌙 Night</button>
+<!-- LOGIN -->
+<div id="login-overlay" class="overlay">
+  <div class="auth-card">
+    <h1>STO Transfer Tracker</h1>
+    <div class="sub" style="margin-bottom:20px;">Enter the team password to continue.</div>
+    <label>Password</label>
+    <input type="password" id="login-password" placeholder="Enter password" style="width:100%;font-size:16px;padding:12px;" autocomplete="current-password">
+    <div id="login-error" class="hint" style="color:var(--bad);min-height:16px;margin-top:8px;"></div>
+    <button id="btn-login" style="width:100%;margin-top:6px;padding:12px;font-size:14px;">Sign in</button>
+  </div>
+</div>
 
+<!-- LOADING -->
+<div id="loading-overlay" class="overlay">
+  <div class="auth-card" style="text-align:center;">
+    <h1>STO Transfer Tracker</h1>
+    <div class="sub" id="loading-label" style="margin-bottom:4px;">Starting up…</div>
+    <div class="progress-track"><div class="progress-fill" id="loading-bar"></div></div>
+    <div class="loading-steps" id="loading-steps" style="text-align:left;">
+      <div data-step="session"><span class="step-dot"></span><span>Verifying session</span></div>
+      <div data-step="connect"><span class="step-dot"></span><span>Connecting to Google Sheet</span></div>
+      <div data-step="sto"><span class="step-dot"></span><span>Loading STO data</span></div>
+      <div data-step="avail"><span class="step-dot"></span><span>Loading available qty</span></div>
+      <div data-step="scans"><span class="step-dot"></span><span>Checking previous scan history</span></div>
+      <div data-step="ready"><span class="step-dot"></span><span>Ready</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- RESUME / START AGAIN DECISION -->
+<div id="resume-overlay" class="overlay">
+  <div class="auth-card">
+    <h1>Previous scan progress found</h1>
+    <div class="sub" id="resume-summary" style="margin-bottom:20px;"></div>
+    <button id="btn-resume-continue" style="width:100%;margin-bottom:10px;padding:12px;">Continue with existing scans</button>
+    <button class="ghost danger" id="btn-resume-fresh" style="width:100%;padding:12px;">Start again (clear all scans)</button>
+  </div>
+</div>
+
+<div class="topbar" id="topbar" style="display:none;">
+  <button class="ghost" id="btn-signout">Sign out</button>
+</div>
+
+<div id="app-root" style="display:none;">
 <div class="wrap">
   <h1>STO transfer &amp; scan tracker</h1>
-  <div class="sub">Paste STO + available qty from MSD, scan barcodes against the right STO, and see what's ready to post. Nothing here is saved to a server — data lives in this browser tab only, so export before you close it.</div>
+  <div class="sub">Connected to your Google Sheet — STO and Available Qty load automatically, and scans sync live so your team stays in sync.</div>
 
   <div class="tabs">
     <div class="tab active" data-tab="setup">1. Load data</div>
@@ -120,10 +161,10 @@
     <div class="card">
       <label>Load directly from Google Sheet</label>
       <div class="row">
-        <input type="text" id="sheet-url" style="flex:1;min-width:320px;" placeholder="Paste your Apps Script Web App URL here (ends in /exec)" value="https://script.google.com/macros/s/AKfycbwboo0lDWPZenL3MK6VZLi30q_-yCUgKSKPEkRzS2FEZQbU-1T2thxEB6MgFDM3qGnP/exec">
+        <input type="text" id="sheet-url" style="flex:1;min-width:320px;" placeholder="Paste your Apps Script Web App URL here (ends in /exec)" value="https://script.google.com/macros/s/AKfycbxYtEYhdJpvv2D8mYpF9dZRfUH2_oneVKT0yJ78avO1T8SUbSrWIzju3AzFbT3izgYK/exec">
         <button id="btn-load-sheet">Load from Google Sheet</button>
       </div>
-      <div class="hint" id="sheet-status">Pulls the STO tab and Available Qty tab in one click. Requires the Apps Script Web App to be deployed first (one-time setup).</div>
+      <div class="hint" id="sheet-status">Pulls the STO tab, Available Qty tab, and any saved scan progress in one click. Requires the Apps Script Web App to be deployed first (one-time setup).</div>
     </div>
 
     <div class="card">
@@ -169,6 +210,7 @@
           <input type="text" id="input-to-plant" placeholder="e.g. Whse B" style="width:160px;">
         </div>
         <button class="ghost" id="btn-print-sto">Print STO Receipt</button>
+        <button class="ghost danger" id="btn-start-again">Start Again (Clear All Scans)</button>
       </div>
 
       <div class="row">
@@ -234,11 +276,15 @@
     </div>
   </div>
 </div>
+</div>
 
 <script>
 (function(){
-  var state = { stoRows: [], availMap: {}, scans: [], isEditing: false, stoLocations: {} };
+  var state = { stoRows: [], availMap: {}, scans: [], isEditing: false, stoLocations: {}, pendingScanData: [] };
   var qsel = function(s,el){ return (el||document).querySelector(s); };
+
+  var AUTH_KEY = 'sto-authed-v1';
+  var APP_PASSWORD = 'TBG123';
 
   function normalizeBarcode(code){
     if(!code) return '';
@@ -327,16 +373,16 @@
     }
     state.stoRows = parsed.rows.map(function(r){
       return {
-        transfer: r[kTransfer], 
-        item: kItem? r[kItem]:'', 
+        transfer: r[kTransfer],
+        item: kItem? r[kItem]:'',
         variant: kVariant? r[kVariant]:'',
         search: kSearch? r[kSearch]:'',
-        barcode: r[kBarcode], 
-        brand: kBrand? r[kBrand]:'', 
+        barcode: r[kBarcode],
+        brand: kBrand? r[kBrand]:'',
         size: kSize? r[kSize]:'',
-        color: kColor? r[kColor]:'', 
+        color: kColor? r[kColor]:'',
         version: kVersion? r[kVersion]:'',
-        qty: parseFloat(r[kQty])||0, 
+        qty: parseFloat(r[kQty])||0,
         product: kProduct? r[kProduct]:''
       };
     }).filter(function(r){ return r.transfer && r.barcode; });
@@ -457,24 +503,94 @@
       .catch(function(err){ setSyncStatus('Sync failed: ' + err.message); });
   }
 
-  function loadFromGoogleSheet(){
-    var url = qsel('#sheet-url').value.trim();
-    var statusEl = qsel('#sheet-status');
-    var btn = qsel('#btn-load-sheet');
-    if(!url){ statusEl.textContent = 'Paste your Apps Script Web App URL first.'; return; }
-    statusEl.textContent = 'Loading…';
-    btn.disabled = true;
-    fetch(url)
+  // Extracts {transfer, barcode, qty} entries (qty>0 only) from the SCAN DATA
+  // sheet rows returned by Apps Script, and stashes them as a pending decision
+  // rather than applying them immediately — the resume/start-again prompt decides.
+  function handleScanDataFromSheet(rows){
+    var normalized = (rows||[]).map(function(r){
+      var transfer = r['Transfer number'] || r['transfer number'] || '';
+      var barcode = r['Barcode'] || r['barcode'] || '';
+      var qty = parseInt(r['Scanned qty'] || r['scanned qty'] || 0, 10) || 0;
+      return {transfer:String(transfer).trim(), barcode:String(barcode).trim(), qty:qty};
+    }).filter(function(r){ return r.transfer && r.barcode && r.qty>0; });
+    state.pendingScanData = normalized;
+  }
+
+  function pendingScanTotals(){
+    var items = state.pendingScanData.length;
+    var qty = state.pendingScanData.reduce(function(s,r){ return s+r.qty; }, 0);
+    return {items:items, qty:qty};
+  }
+
+  function applyPendingScanData(){
+    state.scans = [];
+    state.pendingScanData.forEach(function(entry){
+      for(var i=0;i<entry.qty;i++){
+        state.scans.push({transfer:entry.transfer, barcode:entry.barcode, time:new Date().toLocaleTimeString(), result:'Restored from Sheet'});
+      }
+    });
+    hideResumeOverlay();
+    refreshAll();
+  }
+
+  function startFreshScans(){
+    state.scans = [];
+    state.pendingScanData = [];
+    hideResumeOverlay();
+    refreshAll();
+    postToSheet('clearAll', []).then(function(){
+      setSyncStatus('Scan history cleared on Google Sheet at ' + new Date().toLocaleTimeString() + '.');
+    }).catch(function(err){
+      setSyncStatus('Could not clear the sheet: ' + err.message);
+    });
+  }
+
+  function showResumeOverlay(itemCount, totalQty){
+    qsel('#resume-summary').textContent = 'Found ' + itemCount + ' item line(s) with ' + totalQty + ' unit(s) already scanned on your Google Sheet. Continue where you left off, or start again to reset all scanned quantities to zero.';
+    qsel('#resume-overlay').classList.add('show');
+  }
+  function hideResumeOverlay(){ qsel('#resume-overlay').classList.remove('show'); }
+
+  function maybeShowResumePrompt(){
+    var totals = pendingScanTotals();
+    if(totals.items>0 && totals.qty>0){
+      showResumeOverlay(totals.items, totals.qty);
+    }
+  }
+
+  // Fetches STO + Available Qty + Scan history from the Apps Script Web App in
+  // one request and applies them. onProgress(percent, label) is optional and
+  // used by the startup loading screen; omitted on manual reloads.
+  function fetchAndApplySheetData(onProgress){
+    var url = currentSheetUrl();
+    if(!url) return Promise.reject(new Error('No Google Sheet URL set.'));
+    if(onProgress) onProgress(20, 'connect');
+    return fetch(url)
       .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
       .then(function(data){
+        if(onProgress) onProgress(50, 'sto');
         var stoOk = loadSTOFromParsed(objectsToParsedShape(data.sto || []), 'Google Sheet');
+        if(onProgress) onProgress(72, 'avail');
         var availOk = loadAvailFromParsed(objectsToParsedShape(data.avail || []), 'Google Sheet');
+        if(onProgress) onProgress(90, 'scans');
+        handleScanDataFromSheet(data.scanData || data.scan || []);
+        return {stoOk:stoOk, availOk:availOk};
+      });
+  }
+
+  function loadFromGoogleSheet(){
+    var statusEl = qsel('#sheet-status');
+    var btn = qsel('#btn-load-sheet');
+    if(!currentSheetUrl()){ statusEl.textContent = 'Paste your Apps Script Web App URL first.'; return; }
+    statusEl.textContent = 'Loading…';
+    btn.disabled = true;
+    fetchAndApplySheetData()
+      .then(function(res){
         var when = new Date().toLocaleTimeString();
-        if(stoOk && availOk){
-          statusEl.textContent = 'Loaded from Google Sheet at ' + when + '.';
-        } else {
-          statusEl.textContent = 'Loaded with issues — check the STO / Available qty status messages below.';
-        }
+        statusEl.textContent = (res.stoOk && res.availOk)
+          ? ('Loaded from Google Sheet at ' + when + '.')
+          : 'Loaded with issues — check the STO / Available qty status messages below.';
+        maybeShowResumePrompt();
       })
       .catch(function(err){
         statusEl.textContent = 'Error loading sheet: ' + err.message + '. Check the URL and that the Apps Script is deployed with access set to "Anyone".';
@@ -499,8 +615,8 @@
   function scannedCount(transfer, barcode){
     var n=0;
     var normTarget = normalizeBarcode(barcode);
-    state.scans.forEach(function(s){ 
-      if(s.transfer===transfer && normalizeBarcode(s.barcode)===normTarget) n++; 
+    state.scans.forEach(function(s){
+      if(s.transfer===transfer && normalizeBarcode(s.barcode)===normTarget) n++;
     });
     return n;
   }
@@ -570,7 +686,7 @@
     var sto = currentSTO();
     qsel('#scan-sto-label').textContent = sto || '—';
     var rows = state.stoRows.filter(function(r){ return r.transfer===sto; });
-    
+
     var filterTerm = (qsel('#input-filter').value || '').trim().toLowerCase();
     if(filterTerm){
       rows = rows.filter(function(r){
@@ -587,21 +703,21 @@
     qsel('#scan-item-count').textContent = rows.length + ' items';
     var tbody = qsel('#scan-table tbody');
     if(!rows.length){ tbody.innerHTML = '<tr><td colspan="13" class="empty">No matching items found.</td></tr>'; return; }
-    
+
     tbody.innerHTML = rows.map(function(r){
       var avail = availFor(r);
       var scanned = scannedCount(r.transfer, r.barcode);
       var balance = avail - scanned;
       var status, cls;
-      
+
       if(avail===0 && scanned===0){ status='No stock'; cls='pill-dim'; }
       else if(scanned>avail){ status='OVER-SCAN'; cls='pill-bad'; }
       else if(scanned===0){ status='Not scanned'; cls='pill-dim'; }
       else if(balance<=0){ status='Fully scanned'; cls='pill-ok'; }
       else { status='Partial'; cls='pill-warn'; }
 
-      var scannedCellHTML = state.isEditing ? 
-        '<input type="number" min="0" class="edit-qty-input" data-barcode="'+r.barcode+'" value="'+scanned+'">' : 
+      var scannedCellHTML = state.isEditing ?
+        '<input type="number" min="0" class="edit-qty-input" data-barcode="'+r.barcode+'" value="'+scanned+'">' :
         scanned;
 
       return '<tr>'+
@@ -686,7 +802,7 @@
 
     var totShipped = 0;
     var tableRows = '';
-    
+
     rows.forEach(function(r){
       var scanned = scannedCount(r.transfer, r.barcode);
       if(scanned > 0){
@@ -705,7 +821,7 @@
       tableRows = '<tr><td colspan="5" style="text-align:center;">No scanned items to print.</td></tr>';
     }
 
-    printArea.innerHTML = 
+    printArea.innerHTML =
       '<div class="print-header">'+
         '<div><h2>STO Handover &amp; Verification Sheet</h2><div>STO Order #: <b>'+sto+'</b></div></div>'+
         '<div>Date: <b>'+new Date().toLocaleDateString()+'</b></div>'+
@@ -741,12 +857,12 @@
     var sto = currentSTO();
     var fb = qsel('#scan-feedback');
     if(!sto){ fb.textContent = 'Select an STO first.'; return; }
-    
+
     var normInput = normalizeBarcode(barcode);
-    var match = state.stoRows.filter(function(r){ 
-      return r.transfer===sto && normalizeBarcode(r.barcode)===normInput; 
+    var match = state.stoRows.filter(function(r){
+      return r.transfer===sto && normalizeBarcode(r.barcode)===normInput;
     })[0];
-    
+
     var result;
     if(!match){
       result = 'Not on this STO';
@@ -815,26 +931,6 @@
     URL.revokeObjectURL(url);
   }
 
-  function applyStoredTheme(){
-    var saved = null;
-    try{ saved = localStorage.getItem('sto-theme'); }catch(e){}
-    var btn = qsel('#btn-theme-toggle');
-    if(saved === 'light' || saved === 'dark'){
-      document.documentElement.setAttribute('data-theme', saved);
-    }
-    var isDark = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim().toLowerCase() !== '#f5f3ee';
-    if(btn) btn.textContent = isDark ? '☀️ Day' : '🌙 Night';
-  }
-  qsel('#btn-theme-toggle').addEventListener('click', function(){
-    var current = document.documentElement.getAttribute('data-theme');
-    var isDark = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim().toLowerCase() !== '#f5f3ee';
-    var next = isDark ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    try{ localStorage.setItem('sto-theme', next); }catch(e){}
-    this.textContent = next === 'dark' ? '☀️ Day' : '🌙 Night';
-  });
-  applyStoredTheme();
-
   document.querySelectorAll('.tab').forEach(function(t){
     t.addEventListener('click', function(){
       document.querySelectorAll('.tab').forEach(function(x){ x.classList.remove('active'); });
@@ -851,7 +947,7 @@
   qsel('#btn-load-avail').addEventListener('click', loadAvail);
   qsel('#btn-clear-sto').addEventListener('click', function(){ qsel('#ta-sto').value=''; qsel('#sto-status').textContent=''; });
   qsel('#btn-clear-avail').addEventListener('click', function(){ qsel('#ta-avail').value=''; qsel('#avail-status').textContent=''; });
-  
+
   qsel('#sel-sto').addEventListener('change', function(){
     updateLocationInputs();
     refreshScanTable();
@@ -867,7 +963,7 @@
   qsel('#btn-export').addEventListener('click', exportCSV);
   qsel('#btn-sync-sheet').addEventListener('click', syncAllToSheet);
   qsel('#btn-print-sto').addEventListener('click', printSTOReceipt);
-  
+
   qsel('#input-filter').addEventListener('input', refreshScanTable);
 
   qsel('#btn-toggle-edit').addEventListener('click', function(){
@@ -877,8 +973,114 @@
     refreshScanTable();
   });
 
+  qsel('#btn-start-again').addEventListener('click', function(){
+    if(!state.scans.length){ return; }
+    if(confirm('Clear all scanned quantities and start again? This also clears the saved scan history on your Google Sheet. This cannot be undone.')){
+      startFreshScans();
+    }
+  });
+
+  qsel('#btn-resume-continue').addEventListener('click', applyPendingScanData);
+  qsel('#btn-resume-fresh').addEventListener('click', startFreshScans);
+
+  // ---------- Login / loading / bootstrap ----------
+
+  function isAuthed(){
+    try{ return localStorage.getItem(AUTH_KEY) === '1'; }catch(e){ return false; }
+  }
+  function setAuthed(v){
+    try{ if(v) localStorage.setItem(AUTH_KEY,'1'); else localStorage.removeItem(AUTH_KEY); }catch(e){}
+  }
+
+  function showLogin(){
+    qsel('#login-overlay').classList.add('show');
+    qsel('#login-password').focus();
+  }
+  function hideLogin(){ qsel('#login-overlay').classList.remove('show'); }
+
+  function attemptLogin(){
+    var val = qsel('#login-password').value;
+    if(val === APP_PASSWORD){
+      setAuthed(true);
+      hideLogin();
+      startApp();
+    } else {
+      qsel('#login-error').textContent = 'Incorrect password. Please try again.';
+      qsel('#login-password').value = '';
+      qsel('#login-password').focus();
+    }
+  }
+  qsel('#btn-login').addEventListener('click', attemptLogin);
+  qsel('#login-password').addEventListener('keydown', function(e){ if(e.key==='Enter') attemptLogin(); });
+  qsel('#btn-signout').addEventListener('click', function(){
+    setAuthed(false);
+    location.reload();
+  });
+
+  var STEP_ORDER = ['session','connect','sto','avail','scans','ready'];
+  var STEP_THRESHOLDS = {session:0, connect:20, sto:50, avail:72, scans:90, ready:100};
+
+  function setLoadingProgress(pct, stepKey){
+    qsel('#loading-bar').style.width = pct + '%';
+    var labels = {
+      session:'Verifying your session…',
+      connect:'Connecting to Google Sheet…',
+      sto:'Loading STO data…',
+      avail:'Loading available qty…',
+      scans:'Checking previous scan history…',
+      ready:'Ready.'
+    };
+    qsel('#loading-label').textContent = labels[stepKey] || 'Loading…';
+    STEP_ORDER.forEach(function(key){
+      var row = qsel('#loading-steps [data-step="'+key+'"]');
+      var dot = row.querySelector('.step-dot');
+      dot.classList.remove('done','active');
+      if(pct >= STEP_THRESHOLDS[key] && key===stepKey){ dot.classList.add('active'); }
+      else if(pct > STEP_THRESHOLDS[key]){ dot.classList.add('done'); }
+    });
+  }
+
+  function showLoadingUI(){ qsel('#loading-overlay').classList.add('show'); }
+  function hideLoadingUI(){ qsel('#loading-overlay').classList.remove('show'); }
+  function showApp(){
+    qsel('#app-root').style.display = 'block';
+    qsel('#topbar').style.display = 'flex';
+  }
+
+  function startApp(){
+    showLoadingUI();
+    setLoadingProgress(6, 'session');
+    setTimeout(function(){
+      setLoadingProgress(20, 'connect');
+      if(!currentSheetUrl()){
+        setLoadingProgress(100, 'ready');
+        setTimeout(function(){ hideLoadingUI(); refreshAll(); showApp(); }, 450);
+        return;
+      }
+      fetchAndApplySheetData(function(pct, stepKey){ setLoadingProgress(pct, stepKey); })
+        .then(function(){
+          setLoadingProgress(100, 'ready');
+          setTimeout(function(){
+            hideLoadingUI();
+            showApp();
+            maybeShowResumePrompt();
+          }, 350);
+        })
+        .catch(function(err){
+          setLoadingProgress(100, 'ready');
+          qsel('#loading-label').textContent = 'Could not reach Google Sheet — continuing offline.';
+          setTimeout(function(){ hideLoadingUI(); refreshAll(); showApp(); }, 900);
+        });
+    }, 300);
+  }
+
   refreshAll();
-  if(currentSheetUrl()){ loadFromGoogleSheet(); }
+  if(isAuthed()){
+    hideLogin();
+    startApp();
+  } else {
+    showLogin();
+  }
 })();
 </script>
 </body>
