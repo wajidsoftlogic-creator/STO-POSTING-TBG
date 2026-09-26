@@ -1,719 +1,1086 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<base target="_top">
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<meta name="theme-color" content="#4f46e5">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STO Transfer Tracker</title>
 <style>
-:root{--indigo:#4f46e5;--violet:#7c3aed;--pink:#ec4899;--amber:#f59e0b;--blue:#3b82f6;--green:#10b981;--red:#ef4444;
-  --ink:#1f2937;--muted:#6b7280;--line:#e5e7eb;--bg:#f4f5fb}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0}
-body{font-family:Poppins,system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
-button{font-family:inherit;cursor:pointer}
-input,textarea,select{font-family:inherit;font-size:16px}
-.hidden{display:none!important}
+  :root{
+    --bg:#eef2f8; --panel:#ffffff; --panel2:#f4f7fc; --border:#dbe3f0;
+    --text:#16213a; --text-dim:#5c6b85; --accent:#2f6fed; --accent-dim:#e4edff;
+    --accent-text:#ffffff;
+    --good:#12875e; --good-bg:#e3f8ee; --bad:#d92d3f; --bad-bg:#fdeaec;
+    --warn:#b76e00; --warn-bg:#fff2df; --mono:'SF Mono',Consolas,'Courier New',monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:14px;}
+  .wrap{max-width:1400px;margin:0 auto;padding:16px 20px 60px;}
+  h1{font-size:18px;font-weight:600;margin:0 0 4px;letter-spacing:.2px;}
+  .sub{color:var(--text-dim);font-size:12px;margin-bottom:18px;}
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:18px;}
+  .tab{padding:10px 16px;cursor:pointer;color:var(--text-dim);font-size:13px;font-weight:500;border-bottom:2px solid transparent;user-select:none;}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .tab:hover{color:var(--text);}
+  .panel{display:none;}
+  .panel.active{display:block;}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;}
+  label{display:block;font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+  textarea{width:100%;min-height:140px;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:10px;font-family:var(--mono);font-size:12px;resize:vertical;}
+  input[type=text],input[type=password],select{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:9px 10px;font-size:14px;}
+  select{cursor:pointer;}
+  button{background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent-dim);border-radius:6px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;}
+  button:hover{background:var(--accent);color:var(--accent-text);}
+  button.ghost{background:transparent;color:var(--text-dim);border:1px solid var(--border);}
+  button.ghost:hover{background:var(--panel2);color:var(--text);}
+  button.danger{color:var(--bad);border-color:var(--bad-bg);background:var(--bad-bg);}
+  button.danger:hover{background:var(--bad);color:#fff;}
+  button:disabled{opacity:.4;cursor:not-allowed;}
+  .topbar{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));right:14px;z-index:20;display:flex;align-items:center;gap:10px;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th{text-align:left;color:var(--text-dim);font-weight:600;text-transform:uppercase;font-size:10.5px;letter-spacing:.4px;padding:8px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--panel);}
+  td{padding:8px 10px;border-bottom:1px solid var(--border);}
+  tr:hover td{background:var(--panel2);}
+  .tablewrap{max-height:520px;overflow:auto;border:1px solid var(--border);border-radius:6px;}
+  .mono{font-family:var(--mono);}
+  .pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;}
+  .pill-ok{background:var(--good-bg);color:var(--good);}
+  .pill-bad{background:var(--bad-bg);color:var(--bad);}
+  .pill-warn{background:var(--warn-bg);color:var(--warn);}
+  .pill-dim{background:var(--panel2);color:var(--text-dim);}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px;}
+  .stat{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px 14px;}
+  .stat .n{font-size:22px;font-weight:700;}
+  .stat .l{font-size:10.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.4px;margin-top:2px;}
+  .scanbox{font-size:20px;padding:14px 16px;width:100%;font-family:var(--mono);letter-spacing:.5px;}
+  .flash-good{animation:flashg .5s;}
+  .flash-bad{animation:flashb .5s;}
+  @keyframes flashg{0%{background:var(--good-bg);}100%{background:var(--panel2);}}
+  @keyframes flashb{0%{background:var(--bad-bg);}100%{background:var(--panel2);}}
+  .empty{color:var(--text-dim);text-align:center;padding:40px 20px;font-size:13px;}
+  .hint{color:var(--text-dim);font-size:11.5px;margin-top:6px;line-height:1.5;}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+  .badge-count{background:var(--panel2);color:var(--text-dim);border-radius:20px;padding:2px 8px;font-size:11px;margin-left:6px;}
+  .log{max-height:200px;overflow:auto;font-family:var(--mono);font-size:11.5px;color:var(--text-dim);}
+  .log div{padding:3px 0;border-bottom:1px solid var(--border);}
+  .edit-qty-input{width:60px;background:var(--bg);color:var(--text);border:1px solid var(--accent);border-radius:4px;padding:3px 6px;font-family:var(--mono);font-size:12px;}
+  .filter-input{padding:6px 10px;font-size:12px;width:280px;}
 
-/* ---------- Login ---------- */
-#login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;
-  background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 45%,#ec4899 100%)}
-.login-card{background:#fff;border-radius:24px;padding:28px 22px;width:100%;max-width:340px;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,.25)}
-.logo{width:60px;height:60px;border-radius:16px;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(135deg,var(--amber),var(--pink));color:#fff;font-size:24px;font-weight:700}
-.login-card h1{margin:0;font-size:20px}
-.login-card p{margin:2px 0 16px;color:var(--muted);font-size:13px}
-.dots{display:flex;justify-content:center;gap:14px;margin:6px 0 18px}
-.dots i{width:16px;height:16px;border-radius:50%;border:2px solid #c7d2fe;transition:.15s}
-.dots i.on{background:var(--violet);border-color:var(--violet);transform:scale(1.1)}
-.dots.shake{animation:shake .35s}
-@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
-.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.keypad button{height:58px;border:0;border-radius:16px;background:#f3f4ff;font-size:22px;font-weight:600;color:var(--ink)}
-.keypad button:active{background:#e0e7ff;transform:scale(.96)}
-.keypad .k-fn{background:transparent;font-size:14px;color:var(--muted)}
-.err{color:var(--red);min-height:20px;margin-top:10px;font-size:13px}
+  /* Overlays: login / loading / resume-scan-decision */
+  .overlay{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;z-index:200;padding:20px;}
+  .overlay.show{display:flex;}
+  .auth-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:30px 32px;max-width:400px;width:100%;box-shadow:0 12px 34px rgba(22,33,58,.10);}
+  .auth-card h1{font-size:19px;margin-bottom:4px;}
+  .progress-track{width:100%;height:8px;background:var(--panel2);border-radius:4px;overflow:hidden;border:1px solid var(--border);margin-top:6px;}
+  .progress-fill{height:100%;background:var(--accent);width:4%;transition:width .35s ease;}
+  .loading-steps{margin-top:14px;font-size:12px;color:var(--text-dim);}
+  .loading-steps div{padding:3px 0;display:flex;align-items:center;gap:8px;}
+  .step-dot{width:7px;height:7px;border-radius:50%;background:var(--border);flex-shrink:0;}
+  .step-dot.done{background:var(--good);}
+  .step-dot.active{background:var(--accent);}
 
-/* ---------- Header ---------- */
-header{background:linear-gradient(120deg,#4f46e5,#7c3aed 55%,#ec4899);color:#fff;padding:10px 14px 0;position:sticky;top:0;z-index:20;
-  box-shadow:0 4px 18px rgba(79,70,229,.3)}
-.top{display:flex;align-items:center;gap:8px}
-.brand{font-weight:700;font-size:16px;flex:1;display:flex;align-items:center;gap:8px;min-width:0}
-.brand .mini{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--amber),var(--pink));display:flex;align-items:center;justify-content:center;font-size:12px;flex:none}
-.brand span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.me{background:rgba(255,255,255,.18);border-radius:20px;padding:4px 10px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:45%}
-.me b{font-weight:600}
-.icon{border:0;background:rgba(255,255,255,.18);color:#fff;width:34px;height:34px;border-radius:10px;font-size:15px;flex:none}
-.icon.off{opacity:.5}
-.tabs{display:flex;gap:2px;margin-top:10px}
-.tab{flex:1;background:transparent;border:0;color:#fff;opacity:.8;padding:10px 6px;border-radius:12px 12px 0 0;font-weight:600;font-size:13px}
-.tab.active{background:var(--bg);color:var(--indigo);opacity:1}
-main{padding:14px;max-width:1400px;margin:0 auto}
-.sync{position:fixed;top:8px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;font-size:11px;padding:3px 10px;border-radius:20px;z-index:50;opacity:0;transition:.2s;pointer-events:none}
-.sync.on{opacity:.85}
-
-/* ---------- Common ---------- */
-.btn{border:0;border-radius:12px;padding:12px 18px;font-weight:600;color:#fff;font-size:15px;background:linear-gradient(135deg,var(--indigo),var(--violet))}
-.btn:active{transform:scale(.98)}
-.btn:disabled{opacity:.5}
-.btn.block{width:100%}
-.btn.light{background:#eef2ff;color:var(--indigo);padding:9px 14px;font-size:13px}
-.btn.gray{background:#f3f4f6;color:var(--ink)}
-.btn.red{background:linear-gradient(135deg,#ef4444,#dc2626)}
-.btn.green{background:linear-gradient(135deg,#10b981,#15803d)}
-.btn.teal{background:linear-gradient(135deg,#14b8a6,#0d9488)}
-.btn.blue{background:linear-gradient(135deg,#3b82f6,#6366f1)}
-.btn.amber{background:linear-gradient(135deg,#f59e0b,#d97706)}
-.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
-.toolbar input{padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:14px}
-.toolbar input[type=search]{flex:1;min-width:140px}
-.chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px}
-.chip{border-radius:14px;padding:10px 12px;color:#fff}
-.chip b{display:block;font-size:22px;line-height:1.15}
-.chip span{font-size:11.5px;opacity:.92}
-.c-amber{background:linear-gradient(135deg,#f59e0b,#f97316)}.c-blue{background:linear-gradient(135deg,#3b82f6,#6366f1)}
-.c-teal{background:linear-gradient(135deg,#14b8a6,#0891b2)}.c-green{background:linear-gradient(135deg,#10b981,#14b8a6)}
-.c-red{background:linear-gradient(135deg,#ef4444,#ec4899)}.c-violet{background:linear-gradient(135deg,#8b5cf6,#a855f7)}
-.empty{color:var(--muted);text-align:center;padding:26px 8px;font-size:13px}
-.guest{background:#fef3c7;color:#92400e;border-radius:12px;padding:8px 12px;font-size:12.5px;margin-bottom:10px}
-
-/* ---------- Board ---------- */
-.seg{display:none;background:#fff;border-radius:14px;padding:4px;margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,.05)}
-.seg button{flex:1;border:0;background:transparent;padding:8px 2px;border-radius:10px;font-weight:600;font-size:11.5px;color:var(--muted);line-height:1.3}
-.seg button b{display:block;margin:2px auto 0;width:fit-content;min-width:22px;padding:0 6px;border-radius:10px;background:#f3f4f6;font-size:11.5px}
-.seg button.on{background:var(--indigo);color:#fff}
-.seg button.on b{background:rgba(255,255,255,.25)}
-.board{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-@media(max-width:1150px) and (min-width:861px){.board{grid-template-columns:repeat(2,1fr)}}
-.lane{background:#fff;border-radius:18px;padding:10px;box-shadow:0 2px 10px rgba(0,0,0,.05);min-height:100px}
-.lane h3{margin:2px 4px 10px;font-size:14px;display:flex;align-items:center;gap:8px}
-.lane h3 .count{margin-left:auto;background:#f3f4f6;border-radius:20px;padding:1px 9px;font-size:12px}
-.dot{width:10px;height:10px;border-radius:50%;flex:none}
-@media(max-width:860px){
-  .seg{display:flex}
-  .board{display:block}
-  .lane{display:none;background:transparent;box-shadow:none;padding:0}
-  .lane.show{display:block}
-  .lane h3{display:none}
-}
-.task{border:1px solid var(--line);border-left:5px solid var(--amber);border-radius:14px;padding:11px;margin-bottom:9px;background:#fffdf7;transition:opacity .2s}
-.task.picked{border-left-color:var(--blue);background:#f7faff}
-.task.dropped{border-left-color:#14b8a6;background:#f0fdfa}
-.task.done{border-left-color:var(--green);background:#f6fdf9}
-.task.delayed{border-color:#fecaca;border-left-color:var(--red);background:#fff5f5}
-.task.saving{opacity:.6}
-.task.fresh{animation:flash 1.2s ease 3}
-@keyframes flash{50%{box-shadow:0 0 0 4px #f59e0b}}
-.shop{font-size:15.5px;font-weight:700;display:inline-block;padding:2px 9px;border-radius:8px;background:#eef2ff;color:var(--indigo)}
-.delayed .shop{background:var(--red);color:#fff;animation:pulse 1.6s infinite}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.5)}50%{box-shadow:0 0 0 7px rgba(239,68,68,0)}}
-.tag{display:inline-block;font-size:10.5px;font-weight:600;border-radius:20px;padding:2px 8px;margin-left:5px;vertical-align:middle}
-.tag.red{background:#fee2e2;color:#b91c1c}.tag.orange{background:#ffedd5;color:#c2410c}.tag.gray{background:#f3f4f6;color:#4b5563}
-.tag.drv{background:#e0e7ff;color:#3730a3}.tag.me{background:#4f46e5;color:#fff}
-.meta{color:var(--muted);font-size:12.5px;margin-top:5px;line-height:1.55}
-.meta b{color:var(--ink);font-weight:600}
-.note{background:#fff;border:1px dashed #d1d5db;border-radius:8px;padding:5px 8px;margin-top:6px;font-size:12.5px;word-break:break-word}
-.elapsed{font-weight:700}
-.delayed .elapsed{color:var(--red)}
-.act{margin-top:9px;display:flex;flex-direction:column;gap:6px}
-.check{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;font-weight:600;font-size:15px;
-  color:#fff;cursor:pointer;user-select:none;background:linear-gradient(135deg,#3b82f6,#6366f1)}
-.check.drop{background:linear-gradient(135deg,#14b8a6,#0d9488)}
-.check.rcv{background:linear-gradient(135deg,#10b981,#15803d)}
-.check input{width:22px;height:22px;accent-color:#fff;cursor:pointer;margin:0}
-.links{display:flex;justify-content:flex-end;gap:14px;margin-top:6px}
-.lnk{background:none;border:0;font-size:12px;text-decoration:underline;padding:2px 0;color:var(--muted)}
-.lnk.red{color:#b91c1c}.lnk.amber{color:#b45309}
-.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:8px}
-.step{font-size:11px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:4px 6px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.step b{display:block;font-size:13px;color:var(--ink)}
-
-/* ---------- Post ---------- */
-.panel{background:#fff;border-radius:20px;padding:18px;box-shadow:0 2px 12px rgba(0,0,0,.05);max-width:760px;margin:0 auto}
-.panel h3{margin:0 0 2px}
-.panel .sub{color:var(--muted);margin:0 0 12px;font-size:13px}
-.poster{display:inline-flex;align-items:center;gap:6px;background:#f5f3ff;color:var(--violet);border-radius:20px;padding:5px 12px;font-size:13px;font-weight:600;margin-bottom:6px}
-label.lbl{display:block;font-weight:600;margin:14px 0 6px;font-size:13px}
-.field{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:11px;outline:none;background:#fff}
-.field:focus{border-color:var(--violet);box-shadow:0 0 0 3px rgba(124,58,237,.12)}
-.shops{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
-@media(max-width:480px){.shops{grid-template-columns:1fr 1fr}}
-.shopbox{position:relative}
-.shopbox input{position:absolute;opacity:0}
-.shopbox span{display:block;padding:13px 8px;border-radius:12px;border:2px solid var(--line);font-weight:600;text-align:center;font-size:13.5px}
-.shopbox input:checked+span{border-color:transparent;color:#fff;background:linear-gradient(135deg,#f59e0b,#ec4899)}
-.drivers{display:flex;flex-wrap:wrap;gap:8px}
-.drivers label{position:relative}
-.drivers input{position:absolute;opacity:0}
-.drivers span{display:block;padding:9px 14px;border-radius:20px;border:2px solid var(--line);font-weight:600;font-size:13px}
-.drivers input:checked+span{border-color:transparent;color:#fff;background:linear-gradient(135deg,#3b82f6,#6366f1)}
-.postbar{position:sticky;bottom:0;background:linear-gradient(transparent,#fff 30%);padding:14px 0 4px;margin-top:6px}
-
-/* ---------- Summary ---------- */
-.card{background:#fff;border-radius:18px;padding:14px;box-shadow:0 2px 10px rgba(0,0,0,.05);margin-bottom:14px}
-.card h3{margin:0 0 4px;font-size:15px}
-.card .hint{color:var(--muted);font-size:12px;margin:0 0 10px}
-.big3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.big3 div{border-radius:14px;padding:14px 8px;text-align:center}
-.big3 b{display:block;font-size:26px;line-height:1.2}
-.big3 span{font-size:12px;font-weight:600}
-.b-avg{background:#eef2ff;color:#3730a3}.b-min{background:#ecfdf5;color:#166534}.b-max{background:#fff1f2;color:#be123c}
-.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
-table{border-collapse:collapse;width:100%}
-th,td{padding:9px 10px;text-align:left;border-bottom:1px solid #f0f0f5;font-size:13px;white-space:nowrap}
-th{background:#f8f7ff;color:#4338ca;font-weight:600}
-th.ga{background:#eef2ff}th.gm{background:#ecfdf5;color:#166534}th.gx{background:#fff1f2;color:#be123c}
-td:first-child,th:first-child{position:sticky;left:0;background:#fff;z-index:1}
-th:first-child{background:#f8f7ff}
-tr.late td:first-child{color:#b91c1c;font-weight:700}
-td.sr{font-weight:600}
-.bar{height:8px;border-radius:6px;background:#eef2ff;overflow:hidden;min-width:60px}
-.bar i{display:block;height:100%;background:linear-gradient(90deg,#10b981,#f59e0b,#ef4444)}
-.quick{display:flex;gap:6px;overflow-x:auto;width:100%}
-.quick button{border:1px solid var(--line);background:#fff;border-radius:20px;padding:6px 12px;font-size:12.5px;white-space:nowrap}
-.quick button.on{background:var(--indigo);color:#fff;border-color:var(--indigo)}
-
-/* ---------- Confirm modal ---------- */
-#modal{position:fixed;inset:0;background:rgba(17,24,39,.55);z-index:95;display:flex;align-items:flex-end;justify-content:center;padding:12px;
-  opacity:0;pointer-events:none;transition:opacity .15s}
-#modal.show{opacity:1;pointer-events:auto}
-@media(min-width:600px){#modal{align-items:center}}
-.mbox{background:#fff;border-radius:22px;width:100%;max-width:420px;padding:20px;transform:translateY(30px);transition:transform .2s}
-#modal.show .mbox{transform:none}
-.mbox h3{margin:0 0 4px;font-size:18px}
-.mbox p{margin:0 0 12px;color:var(--muted);font-size:13.5px;line-height:1.5}
-.mbox p b{color:var(--ink)}
-.mbox textarea{width:100%;min-height:70px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;resize:vertical;outline:none}
-.mbox textarea:focus{border-color:var(--violet)}
-.mbox .req{color:var(--red);font-size:12px;min-height:16px;margin-top:4px}
-.mbtns{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;margin-top:10px}
-
-/* ---------- Alerts / toast ---------- */
-#alertBox{position:fixed;top:0;left:0;right:0;z-index:90;padding:10px;transform:translateY(-120%);transition:.3s}
-#alertBox.show{transform:translateY(0)}
-.alert{max-width:520px;margin:0 auto;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;border-radius:18px;padding:14px 16px;
-  box-shadow:0 12px 34px rgba(239,68,68,.45);display:flex;gap:12px;align-items:center}
-.alert .bell{font-size:28px;flex:none}
-.alert .txt{flex:1;min-width:0}
-.alert .txt b{display:block;font-size:15px}
-.alert .txt span{font-size:13px;opacity:.95;word-break:break-word}
-.alert button{border:0;border-radius:10px;padding:9px 12px;font-weight:600}
-.alert .go{background:#fff;color:#dc2626}
-.alert .x{background:rgba(255,255,255,.25);color:#fff}
-#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(140px);background:#111827;color:#fff;
-  padding:11px 18px;border-radius:12px;transition:.25s;z-index:99;max-width:92%;font-size:13.5px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
-#toast.show{transform:translateX(-50%) translateY(0)}
-#toast.bad{background:var(--red)}
+  /* Printable Sheet Styles */
+  #print-area{display:none;}
+  @media print{
+    body{background:#fff;color:#000;font-family:Arial,sans-serif;}
+    .wrap, .topbar{display:none!important;}
+    #print-area{display:block!important;padding:20px;}
+    .print-header{display:flex;justify-content:space-between;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:15px;}
+    .print-header h2{margin:0 0 6px 0;font-size:20px;}
+    .print-route-info{display:flex;gap:30px;margin-bottom:20px;font-size:13px;background:#f9f9f9;padding:10px;border:1px solid #eee;}
+    .print-table{width:100%;border-collapse:collapse;margin-bottom:30px;}
+    .print-table th, .print-table td{border:1px solid #ccc;padding:8px;text-align:left;font-size:12px;}
+    .print-table th{background:#f2f2f2;}
+    .signatures{display:flex;justify-content:space-between;margin-top:50px;page-break-inside:avoid;}
+    .sig-box{width:45%;border-top:1px solid #000;padding-top:8px;}
+    .sig-box p{margin:4px 0;font-size:12px;}
+  }
 </style>
+
 </head>
 <body>
 
-<!-- ================= LOGIN ================= -->
-<section id="login">
-  <div class="login-card">
-    <div class="logo">DC</div>
-    <h1>Driver Consolidation</h1>
-    <p>Enter your PIN</p>
-    <div class="dots" id="dots"><i></i><i></i><i></i><i></i></div>
-    <div class="keypad" id="keypad">
-      <button>1</button><button>2</button><button>3</button>
-      <button>4</button><button>5</button><button>6</button>
-      <button>7</button><button>8</button><button>9</button>
-      <button class="k-fn" data-k="clr">Clear</button><button>0</button><button class="k-fn" data-k="del">⌫</button>
-    </div>
-    <div id="loginErr" class="err"></div>
+<div id="print-area"></div>
+
+<!-- LOGIN -->
+<div id="login-overlay" class="overlay">
+  <div class="auth-card">
+    <h1>STO Transfer Tracker</h1>
+    <div class="sub" style="margin-bottom:20px;">Enter the team password to continue.</div>
+    <label>Password</label>
+    <input type="password" id="login-password" placeholder="Enter password" style="width:100%;font-size:16px;padding:12px;" autocomplete="current-password">
+    <div id="login-error" class="hint" style="color:var(--bad);min-height:16px;margin-top:8px;"></div>
+    <button id="btn-login" style="width:100%;margin-top:6px;padding:12px;font-size:14px;">Sign in</button>
   </div>
-</section>
+</div>
 
-<!-- ================= APP ================= -->
-<section id="app" class="hidden">
-  <header>
-    <div class="top">
-      <div class="brand"><span class="mini">DC</span><span>Driver Consolidation</span></div>
-      <span class="me" id="me"></span>
-      <button class="icon hidden" id="bellBtn" title="New-task alerts">🔔</button>
-      <button class="icon" id="refreshBtn" title="Refresh">⟳</button>
-      <button class="icon" id="logoutBtn" title="Log out">⏻</button>
+<!-- LOADING -->
+<div id="loading-overlay" class="overlay">
+  <div class="auth-card" style="text-align:center;">
+    <h1>STO Transfer Tracker</h1>
+    <div class="sub" id="loading-label" style="margin-bottom:4px;">Starting up…</div>
+    <div class="progress-track"><div class="progress-fill" id="loading-bar"></div></div>
+    <div class="loading-steps" id="loading-steps" style="text-align:left;">
+      <div data-step="session"><span class="step-dot"></span><span>Verifying session</span></div>
+      <div data-step="connect"><span class="step-dot"></span><span>Connecting to Google Sheet</span></div>
+      <div data-step="sto"><span class="step-dot"></span><span>Loading STO data</span></div>
+      <div data-step="avail"><span class="step-dot"></span><span>Loading available qty</span></div>
+      <div data-step="scans"><span class="step-dot"></span><span>Checking previous scan history</span></div>
+      <div data-step="ready"><span class="step-dot"></span><span>Ready</span></div>
     </div>
-    <nav class="tabs" id="tabs"></nav>
-  </header>
-  <div class="sync" id="sync">Saving…</div>
-  <div id="alertBox"><div class="alert"><div class="bell">🔔</div>
-    <div class="txt"><b id="alertTitle">New pickup task</b><span id="alertShops"></span></div>
-    <button class="go" id="alertGo">View</button><button class="x" id="alertX">✕</button></div></div>
+  </div>
+</div>
 
-  <main>
-    <!-- BOARD -->
-    <div id="tab-board">
+<!-- RESUME / START AGAIN DECISION -->
+<div id="resume-overlay" class="overlay">
+  <div class="auth-card">
+    <h1>Previous scan progress found</h1>
+    <div class="sub" id="resume-summary" style="margin-bottom:20px;"></div>
+    <button id="btn-resume-continue" style="width:100%;margin-bottom:10px;padding:12px;">Continue with existing scans</button>
+    <button class="ghost danger" id="btn-resume-fresh" style="width:100%;padding:12px;">Start again (clear all scans)</button>
+  </div>
+</div>
+
+<div class="topbar" id="topbar" style="display:none;">
+  <button class="ghost" id="btn-signout">Sign out</button>
+</div>
+
+<div id="app-root" style="display:none;">
+<div class="wrap">
+  <h1>STO transfer &amp; scan tracker</h1>
+  <div class="sub">Connected to your Google Sheet — STO and Available Qty load automatically, and scans sync live so your team stays in sync.</div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="setup">1. Load data</div>
+    <div class="tab" data-tab="scan">2. Scan</div>
+    <div class="tab" data-tab="summary">3. Summary</div>
+  </div>
+
+  <!-- SETUP -->
+  <div class="panel active" id="panel-setup">
+    <div class="card">
+      <label>Load directly from Google Sheet</label>
+      <div class="row">
+        <input type="text" id="sheet-url" style="flex:1;min-width:320px;" placeholder="Paste your Apps Script Web App URL here (ends in /exec)" value="https://script.google.com/macros/s/AKfycbxYtEYhdJpvv2D8mYpF9dZRfUH2_oneVKT0yJ78avO1T8SUbSrWIzju3AzFbT3izgYK/exec">
+        <button id="btn-load-sheet">Load from Google Sheet</button>
+      </div>
+      <div class="hint" id="sheet-status">Pulls the STO tab, Available Qty tab, and any saved scan progress in one click. Requires the Apps Script Web App to be deployed first (one-time setup).</div>
+    </div>
+
+    <div class="card">
+      <label>Or paste STO data manually (fallback — Transfer number, Item number, Variant number, Search name, Barcode, Brand, Size, Color, Version, Transfer quantity, Product name — tab separated, first row = headers)</label>
+      <textarea id="ta-sto" placeholder="Paste your STO export here, headers included..."></textarea>
+      <div class="row" style="margin-top:10px;">
+        <button id="btn-load-sto">Load STO data</button>
+        <button class="ghost" id="btn-clear-sto">Clear</button>
+        <span class="hint" id="sto-status"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <label>Or paste available qty manually (fallback — STO, Item number, Size, Ship quantity — tab separated, first row = headers)</label>
+      <textarea id="ta-avail" placeholder="Paste your available qty export here, headers included..."></textarea>
+      <div class="row" style="margin-top:10px;">
+        <button id="btn-load-avail">Load available qty</button>
+        <button class="ghost" id="btn-clear-avail">Clear</button>
+        <span class="hint" id="avail-status"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <label>Loaded STOs</label>
+      <div id="loaded-summary" class="hint">No data loaded yet.</div>
+    </div>
+  </div>
+
+  <!-- SCAN -->
+  <div class="panel" id="panel-scan">
+    <div class="card">
+      <div class="row" style="margin-bottom:12px;">
+        <div>
+          <label>STO to scan</label>
+          <select id="sel-sto" style="min-width:200px;"></select>
+        </div>
+        <div>
+          <label>From Location / Plant</label>
+          <input type="text" id="input-from-plant" placeholder="e.g. Whse A" style="width:160px;">
+        </div>
+        <div>
+          <label>To Location / Plant</label>
+          <input type="text" id="input-to-plant" placeholder="e.g. Whse B" style="width:160px;">
+        </div>
+        <button class="ghost" id="btn-print-sto">Print STO Receipt</button>
+        <button class="ghost danger" id="btn-start-again">Start Again (Clear All Scans)</button>
+      </div>
+
+      <div class="row">
+        <div style="flex:1;min-width:260px;">
+          <label>Scan barcode &amp; press enter</label>
+          <input type="text" id="scan-input" class="scanbox" placeholder="Scan or type barcode here" autocomplete="off">
+        </div>
+        <button class="ghost" id="btn-undo">Undo last scan</button>
+        <label style="display:flex;align-items:center;gap:6px;text-transform:none;font-size:12px;color:var(--text-dim);margin:0;"><input type="checkbox" id="chk-sound" checked style="width:auto;">Sound</label>
+        <label style="display:flex;align-items:center;gap:6px;text-transform:none;font-size:12px;color:var(--text-dim);margin:0;"><input type="checkbox" id="chk-live-sync" checked style="width:auto;">Live sync to Sheet</label>
+        <span class="hint sync-status" style="margin:0;">&nbsp;</span>
+      </div>
+      <div id="scan-feedback" class="hint">&nbsp;</div>
+    </div>
+
+    <div class="card">
       <div class="toolbar">
-        <input type="date" id="boardDate">
-        <button class="btn light" id="todayBtn">Today</button>
-        <input type="search" id="boardSearch" placeholder="Search…">
+        <div>
+          Items on <b id="scan-sto-label">—</b><span class="badge-count" id="scan-item-count"></span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input type="text" id="input-filter" class="filter-input" placeholder="Filter by Barcode, Item, Variant, Search, Brand, Size...">
+          <button class="ghost" id="btn-toggle-edit">Edit Scanned Quantities</button>
+        </div>
       </div>
-      <div class="guest hidden" id="guestNote">View-only access – you can see the board and summary but can't make changes.</div>
-      <div class="chips" id="boardChips"></div>
-      <div class="seg" id="seg">
-        <button data-l="pending" class="on">To Collect<b id="sP">0</b></button>
-        <button data-l="picked">In Transit<b id="sT">0</b></button>
-        <button data-l="dropped">At FC<b id="sD">0</b></button>
-        <button data-l="done">Received<b id="sR">0</b></button>
-      </div>
-      <div class="board">
-        <div class="lane show" id="L-pending"><h3><span class="dot" style="background:var(--amber)"></span>To Collect<span class="count" id="nP">0</span></h3><div id="lanePending"></div></div>
-        <div class="lane" id="L-picked"><h3><span class="dot" style="background:var(--blue)"></span>Picked – In Transit<span class="count" id="nT">0</span></h3><div id="lanePicked"></div></div>
-        <div class="lane" id="L-dropped"><h3><span class="dot" style="background:#14b8a6"></span>At FC – awaiting receipt<span class="count" id="nD">0</span></h3><div id="laneDropped"></div></div>
-        <div class="lane" id="L-done"><h3><span class="dot" style="background:var(--green)"></span>Received by FC<span class="count" id="nR">0</span></h3><div id="laneDone"></div></div>
+      <div class="tablewrap">
+        <table id="scan-table">
+          <thead><tr>
+            <th>Barcode</th><th>Item</th><th>Variant</th><th>Search Name</th><th>Brand</th><th>Product</th><th>Size</th><th>Color</th>
+            <th>Transfer qty</th><th>Available</th><th>Scanned</th><th>Balance</th><th>Status</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
       </div>
     </div>
 
-    <!-- POST -->
-    <div id="tab-post" class="hidden">
-      <div class="panel">
-        <h3>Post collection task</h3>
-        <p class="sub">Tap one or more showrooms. Each becomes a separate task.</p>
-        <div class="poster">Posting as <span id="posterName"></span></div>
-        <label class="lbl">Showrooms *</label>
-        <div class="shops" id="shopGrid"></div>
-        <div id="orderWrap" class="hidden">
-          <label class="lbl">Order ID * <span style="font-weight:400;color:var(--muted)">(required for Delivery / Return)</span></label>
-          <input class="field" id="orderId" placeholder="Enter order ID" autocomplete="off">
-        </div>
-        <div id="otherWrap">
-          <label class="lbl">Other showroom (optional)</label>
-          <input class="field" id="otherShop" placeholder="Showroom not in the list">
-        </div>
-        <label class="lbl">Assign to driver *</label>
-        <div class="drivers" id="drvGrid"></div>
-        <label class="lbl">Note (optional)</label>
-        <input class="field" id="postNote" placeholder="Order no., items, contact person…">
-        <div class="postbar"><button class="btn block" id="postBtn">Post Task</button></div>
-      </div>
+    <div class="card">
+      <label>Scan log (most recent first)</label>
+      <div class="log" id="scan-log"><div class="empty">No scans yet.</div></div>
     </div>
+  </div>
 
-    <!-- SUMMARY -->
-    <div id="tab-summary" class="hidden">
+  <!-- SUMMARY -->
+  <div class="panel" id="panel-summary">
+    <div class="stats" id="summary-stats"></div>
+    <div class="card">
       <div class="toolbar">
-        <input type="date" id="sFrom"><span>to</span><input type="date" id="sTo">
-        <button class="btn light" id="sGo">Apply</button>
-        <div class="quick" id="quick">
-          <button data-q="today" class="on">Today</button><button data-q="yday">Yesterday</button>
-          <button data-q="7">7 days</button><button data-q="30">30 days</button><button data-q="month">This month</button>
+        <div>All STOs</div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <span class="hint sync-status">&nbsp;</span>
+          <button class="ghost" id="btn-sync-sheet">Sync all to Google Sheet</button>
+          <button class="ghost" id="btn-export">Export scan results (CSV)</button>
         </div>
       </div>
-      <div class="chips" id="sumChips"></div>
-      <div class="card">
-        <h3>Time per task</h3>
-        <p class="hint">From posting the task until it is dropped at the Fulfillment Center.</p>
-        <div class="big3" id="big3"></div>
-      </div>
-      <div class="card">
-        <h3>By showroom</h3>
-        <div class="tw"><table>
-          <thead><tr><th>Showroom</th><th>Tasks</th><th>Late</th><th class="ga">Average</th><th class="gm">Fastest</th><th class="gx">Slowest</th><th></th></tr></thead>
-          <tbody id="shopBody"></tbody>
-        </table></div>
-      </div>
-      <div class="card">
-        <h3>By driver</h3>
-        <div class="tw"><table>
-          <thead><tr><th>Driver</th><th>Tasks</th><th>Late</th><th class="ga">Average</th><th class="gm">Fastest</th><th class="gx">Slowest</th></tr></thead>
-          <tbody id="drvBody"></tbody>
-        </table></div>
+      <div class="tablewrap">
+        <table id="summary-table">
+          <thead><tr>
+            <th>Transfer order</th><th>Transfer qty</th><th>Available qty</th><th>Scanned qty</th><th>Balance</th><th>Status</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
       </div>
     </div>
-  </main>
-</section>
-
-<!-- Confirm modal -->
-<div id="modal"><div class="mbox">
-  <h3 id="mTitle"></h3>
-  <p id="mText"></p>
-  <textarea id="mInput"></textarea>
-  <div class="req" id="mReq"></div>
-  <div class="mbtns"><button class="btn gray" id="mNo">Back</button><button class="btn" id="mYes">Confirm</button></div>
-</div></div>
-
-<div id="toast"></div>
+  </div>
+</div>
+</div>
 
 <script>
-/* ================= STATE ================= */
-let TOKEN='',ME=null,P={},SHOPS=[],DRIVERS=[],DELAY=120;
-let tasks=[],offset=0,lane='pending',pending=0,timer=null;
-const $=id=>document.getElementById(id);
-const ls={get:k=>{try{return localStorage.getItem(k)||''}catch(e){return''}},
-          set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},
-          del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
-const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const pad=n=>String(n).padStart(2,'0');
-const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
-const now=()=>Date.now()+offset;
-const hm=ms=>{if(!ms)return'–';const d=new Date(ms);return pad(d.getHours())+':'+pad(d.getMinutes())};
-const dayLbl=ms=>new Date(ms).toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
-function dur(m){if(m==null||isNaN(m))return'–';m=Math.max(0,+m);if(m<60)return Math.round(m)+'m';
-  return Math.floor(m/60)+'h '+pad(Math.round(m%60))+'m'}
-function toast(msg,bad){const t=$('toast');t.textContent=msg;t.className='show'+(bad?' bad':'');clearTimeout(t._h);t._h=setTimeout(()=>t.className='',2600)}
-function sync(on){pending+=on?1:-1;$('sync').classList.toggle('on',pending>0)}
-const busyUI=()=>$('modal').classList.contains('show');
+(function(){
+  var state = { stoRows: [], availMap: {}, scans: [], isEditing: false, stoLocations: {}, pendingScanData: [] };
+  var qsel = function(s,el){ return (el||document).querySelector(s); };
 
-function api(fn,...a){return new Promise((res,rej)=>google.script.run.withSuccessHandler(res)
-  .withFailureHandler(e=>rej(new Error((e&&e.message||String(e)).replace(/^Exception:\s*/,''))))[fn](...a))}
-function fail(e){
-  if(/SESSION_EXPIRED/.test(e.message)){showLogin('Session ended, please enter your PIN.');return}
-  toast(e.message,true)
-}
+  var AUTH_KEY = 'sto-authed-v1';
+  var APP_PASSWORD = 'TBG123';
 
-/* ================= CONFIRM MODAL ================= */
-let mResolve=null,mRequired=false;
-function confirmBox({title,text,placeholder='Note (optional)',required=false,ok='Confirm',cls=''}){
-  if(mResolve)closeModal(null);
-  $('mTitle').textContent=title;$('mText').innerHTML=text;
-  $('mInput').value='';$('mInput').placeholder=placeholder;$('mReq').textContent='';
-  $('mYes').textContent=ok;$('mYes').className='btn '+cls;mRequired=required;
-  $('modal').classList.add('show');
-  return new Promise(r=>mResolve=r);
-}
-function closeModal(v){$('modal').classList.remove('show');if(mResolve){const r=mResolve;mResolve=null;r(v)}}
-$('mNo').onclick=()=>closeModal(null);
-$('modal').onclick=e=>{if(e.target.id==='modal')closeModal(null)};
-$('mYes').onclick=()=>{const v=$('mInput').value.trim();
-  if(mRequired&&!v){$('mReq').textContent='Please enter a reason.';$('mInput').focus();return}
-  closeModal(v)};
+  function normalizeBarcode(code){
+    if(!code) return '';
+    return String(code).trim().replace(/^0+/, '');
+  }
 
-/* ================= LOGIN (keypad) ================= */
-let pinBuf='';
-function drawDots(){[...$('dots').children].forEach((d,i)=>d.classList.toggle('on',i<pinBuf.length))}
-$('keypad').onclick=e=>{
-  const b=e.target.closest('button');if(!b||b.disabled)return;
-  if(b.dataset.k==='clr')pinBuf='';else if(b.dataset.k==='del')pinBuf=pinBuf.slice(0,-1);
-  else if(pinBuf.length<4)pinBuf+=b.textContent;
-  drawDots();if(pinBuf.length===4)doLogin(pinBuf);
-};
-document.addEventListener('keydown',e=>{
-  if($('login').classList.contains('hidden'))return;
-  if(/^\d$/.test(e.key)&&pinBuf.length<4){pinBuf+=e.key;drawDots();if(pinBuf.length===4)doLogin(pinBuf)}
-  if(e.key==='Backspace'){pinBuf=pinBuf.slice(0,-1);drawDots()}
-});
-async function doLogin(pin){
-  $('loginErr').textContent='Checking…';
-  $('keypad').querySelectorAll('button').forEach(b=>b.disabled=true);
-  try{start(await api('login',pin))}
-  catch(e){$('loginErr').textContent=e.message;$('dots').classList.add('shake');
-    setTimeout(()=>$('dots').classList.remove('shake'),400)}
-  finally{pinBuf='';drawDots();$('keypad').querySelectorAll('button').forEach(b=>b.disabled=false)}
-}
-function showLogin(msg){
-  TOKEN='';ls.del('dc_tok');clearInterval(timer);closeModal(null);
-  $('app').classList.add('hidden');$('login').classList.remove('hidden');$('loginErr').textContent=msg||'';
-}
-$('logoutBtn').onclick=()=>{api('logout',TOKEN).catch(()=>{});showLogin()};
+  var audioCtx = null;
+  function getCtx(){
+    if(!audioCtx){
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if(AC) audioCtx = new AC();
+    }
+    return audioCtx;
+  }
+  function tone(freq, startTime, duration, gainPeak){
+    var ctx = getCtx();
+    if(!ctx) return;
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(freq, startTime);
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(gainPeak, startTime+0.005);
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime+duration);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(startTime); osc.stop(startTime+duration+0.02);
+  }
+  function soundOn(){
+    var chk = document.getElementById('chk-sound');
+    return !chk || chk.checked;
+  }
+  function beepGood(){
+    if(!soundOn()) return;
+    var ctx = getCtx();
+    if(!ctx) return;
+    if(ctx.state==='suspended') ctx.resume();
+    tone(1568, ctx.currentTime, 0.09, 0.18);
+  }
+  function beepBad(){
+    if(!soundOn()) return;
+    var ctx = getCtx();
+    if(!ctx) return;
+    if(ctx.state==='suspended') ctx.resume();
+    tone(220, ctx.currentTime, 0.14, 0.2);
+    tone(180, ctx.currentTime+0.15, 0.16, 0.2);
+  }
 
-/* ================= START ================= */
-function start(r){
-  TOKEN=r.token;ME=r.user;P=r.user.perms;SHOPS=r.showrooms;DRIVERS=r.drivers||[];DELAY=r.delayMin;ls.set('dc_tok',TOKEN);
-  $('login').classList.add('hidden');$('app').classList.remove('hidden');$('loginErr').textContent='';
-  $('me').innerHTML=`<b>${esc(ME.name)}</b> · ${esc(ME.role)}`;
-  $('posterName').textContent=ME.name;
-  $('guestNote').classList.toggle('hidden',!!(P.post||P.pick||P.drop||P.receive||P.cancel||P.undo));
-  const tabs=[['board','Board']];if(P.post)tabs.push(['post','Post Task']);if(P.summary)tabs.push(['summary','Summary']);
-  $('tabs').innerHTML=tabs.map((t,i)=>`<button class="tab${i?'':' active'}" data-tab="${t[0]}">${t[1]}</button>`).join('');
-  $('shopGrid').innerHTML=SHOPS.map(s=>`<label class="shopbox"><input type="checkbox" value="${esc(s)}"><span>${esc(s)}</span></label>`).join('')
-    ||'<div class="empty">Add showrooms in the Settings sheet</div>';
-  $('drvGrid').innerHTML=DRIVERS.map(d=>`<label><input type="radio" name="drv" value="${esc(d)}"><span>${esc(d)}</span></label>`).join('');
-  updateOther();
-  $('boardDate').value=ymd(new Date());
-  seen=new Set();firstCheck=true;
-  setQuick('today');showTab('board');
-  $('bellBtn').classList.toggle('hidden',!P.pick);drawBell();
-  clearInterval(timer);
-  timer=P.pick ? setInterval(poll,20000)
-               : setInterval(()=>{if(!$('tab-board').classList.contains('hidden')&&!pending&&!busyUI())loadBoard(true)},45000);
-}
-setInterval(()=>{if(tasks.length&&!$('app').classList.contains('hidden')&&!busyUI())render()},30000);
+  function parsePasted(text){
+    var lines = text.replace(/\r/g,'').split('\n').filter(function(l){ return l.trim().length; });
+    if(!lines.length) return {headers:[], rows:[]};
+    var headers = lines[0].split('\t').map(function(h){ return h.trim().toLowerCase(); });
+    var rows = lines.slice(1).map(function(l){
+      var cells = l.split('\t');
+      var o = {};
+      headers.forEach(function(h,i){ o[h] = (cells[i]||'').trim(); });
+      return o;
+    });
+    return {headers:headers, rows:rows};
+  }
 
-$('tabs').onclick=e=>{const b=e.target.closest('.tab');if(b)showTab(b.dataset.tab)};
-function showTab(t){
-  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===t));
-  ['board','post','summary'].forEach(x=>$('tab-'+x).classList.toggle('hidden',x!==t));
-  if(t==='board')loadBoard();if(t==='summary')loadSummary();
-}
-$('refreshBtn').onclick=()=>{const t=document.querySelector('.tab.active').dataset.tab;t==='summary'?loadSummary():loadBoard()};
+  function findKey(headers, candidates){
+    for(var i=0;i<candidates.length;i++){
+      var idx = headers.indexOf(candidates[i]);
+      if(idx>-1) return headers[idx];
+    }
+    return null;
+  }
 
-/* ================= NEW-TASK ALERTS ================= */
-let seen=new Set(),firstCheck=true,audioCtx=null,freshIds=new Set(),titleTimer=null;
-const alertsOn=()=>ls.get('dc_bell')!=='off';
-function drawBell(){$('bellBtn').textContent=alertsOn()?'🔔':'🔕';$('bellBtn').classList.toggle('off',!alertsOn())}
-$('bellBtn').onclick=()=>{ls.set('dc_bell',alertsOn()?'off':'on');drawBell();unlockAudio();
-  if(alertsOn()){beep();toast('New-task alerts ON')}else toast('New-task alerts OFF')};
-function unlockAudio(){try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume()}catch(e){}}
-document.addEventListener('pointerdown',unlockAudio,{once:true});
-function beep(){
-  try{unlockAudio();const c=audioCtx,t0=c.currentTime;
-    [0,.25,.6,.85].forEach((d,i)=>{const o=c.createOscillator(),g=c.createGain();
-      o.type='sine';o.frequency.value=i%2?1175:880;
-      g.gain.setValueAtTime(0,t0+d);g.gain.linearRampToValueAtTime(.35,t0+d+.02);g.gain.exponentialRampToValueAtTime(.001,t0+d+.22);
-      o.connect(g);g.connect(c.destination);o.start(t0+d);o.stop(t0+d+.25)})}catch(e){}
-}
-function flashTitle(n){clearInterval(titleTimer);let on=false;
-  titleTimer=setInterval(()=>{document.title=(on=!on)?'('+n+') New task!':'Driver Consolidation'},1000)}
-function checkNew(list){
-  if(!P.pick)return;
-  // drivers get alerts for tasks assigned to them or to "Any driver"
-  const mine=t=>ME.role!=='Driver'||!t.assigned||t.assigned===ME.name;
-  const fresh=list.filter(t=>t.status==='Pending'&&!seen.has(t.id)&&t.postedBy!==ME.name&&mine(t));
-  list.forEach(t=>seen.add(t.id));
-  if(firstCheck){firstCheck=false;return}
-  if(!fresh.length||!alertsOn())return;
-  fresh.forEach(t=>freshIds.add(t.id));
-  setTimeout(()=>fresh.forEach(t=>freshIds.delete(t.id)),60000);
-  const forMe=fresh.some(t=>t.assigned===ME.name);
-  $('alertTitle').textContent=(fresh.length>1?fresh.length+' new pickup tasks':'New pickup task')+(forMe?' for you':'');
-  $('alertShops').textContent=fresh.map(t=>t.showroom).join(', ')+' · posted by '+fresh[0].postedBy;
-  $('alertBox').classList.add('show');
-  beep();try{navigator.vibrate&&navigator.vibrate([400,150,400,150,400])}catch(e){}
-  flashTitle(fresh.length);
-  try{if(window.Notification&&Notification.permission==='granted')new Notification('New pickup task',{body:$('alertShops').textContent})}catch(e){}
-  if(!busyUI())render();
-}
-function closeAlert(){$('alertBox').classList.remove('show');clearInterval(titleTimer);document.title='Driver Consolidation'}
-$('alertX').onclick=closeAlert;
-$('alertGo').onclick=()=>{closeAlert();$('boardDate').value=ymd(new Date());showTab('board');$('seg').querySelector('[data-l=pending]').click()};
-async function poll(){
-  if(pending||busyUI())return;
-  const today=ymd(new Date());
-  const boardLive=!$('tab-board').classList.contains('hidden')&&$('boardDate').value===today;
-  try{const r=await api('getBoard',TOKEN,today,true);
-    if(pending||busyUI())return;
-    offset=r.now-Date.now();
-    if(boardLive){tasks=r.tasks;render()}
-    checkNew(r.tasks)}
-  catch(e){if(/SESSION_EXPIRED/.test(e.message))fail(e)}
-}
+  function loadSTOFromParsed(parsed, sourceLabel){
+    if(!parsed.rows.length){ qsel('#sto-status').textContent = 'No STO rows found.'; return false; }
+    var h = parsed.headers;
+    var kTransfer = findKey(h,['transfer number','sto','transfer order']);
+    var kItem = findKey(h,['item number','item']);
+    var kVariant = findKey(h,['variant number','variant']);
+    var kSearch = findKey(h,['search name']);
+    var kBarcode = findKey(h,['barcode','upc']);
+    var kBrand = findKey(h,['brand']);
+    var kSize = findKey(h,['size']);
+    var kColor = findKey(h,['color']);
+    var kVersion = findKey(h,['version']);
+    var kQty = findKey(h,['transfer quantity','qty','quantity']);
+    var kProduct = findKey(h,['product name','description']);
+    if(!kTransfer || !kBarcode || !kQty){
+      qsel('#sto-status').textContent = 'Could not find required columns (Transfer number, Barcode, Transfer quantity). Check your headers.';
+      return false;
+    }
+    state.stoRows = parsed.rows.map(function(r){
+      return {
+        transfer: r[kTransfer],
+        item: kItem? r[kItem]:'',
+        variant: kVariant? r[kVariant]:'',
+        search: kSearch? r[kSearch]:'',
+        barcode: r[kBarcode],
+        brand: kBrand? r[kBrand]:'',
+        size: kSize? r[kSize]:'',
+        color: kColor? r[kColor]:'',
+        version: kVersion? r[kVersion]:'',
+        qty: parseFloat(r[kQty])||0,
+        product: kProduct? r[kProduct]:''
+      };
+    }).filter(function(r){ return r.transfer && r.barcode; });
+    qsel('#sto-status').textContent = state.stoRows.length + ' rows loaded across ' + uniqueSTOs().length + ' STO(s)' + (sourceLabel? ' — '+sourceLabel : '') + '.';
+    refreshAll();
+    return true;
+  }
 
-/* ================= BOARD ================= */
-$('boardDate').onchange=()=>loadBoard();
-$('todayBtn').onclick=()=>{$('boardDate').value=ymd(new Date());loadBoard()};
-$('boardSearch').oninput=()=>render();
-$('seg').onclick=e=>{const b=e.target.closest('button');if(!b)return;lane=b.dataset.l;
-  [...$('seg').children].forEach(x=>x.classList.toggle('on',x===b));
-  ['pending','picked','dropped','done'].forEach(l=>$('L-'+l).classList.toggle('show',l===lane))};
+  function loadSTO(){
+    var text = qsel('#ta-sto').value;
+    var parsed = parsePasted(text);
+    if(!parsed.rows.length){ qsel('#sto-status').textContent = 'Paste data first.'; return; }
+    loadSTOFromParsed(parsed);
+  }
 
-async function loadBoard(silent){
-  const d=$('boardDate').value||ymd(new Date());
-  if(!silent)$('refreshBtn').textContent='…';
-  try{const r=await api('getBoard',TOKEN,d,d===ymd(new Date()));
-    if(pending)return;
-    offset=r.now-Date.now();tasks=r.tasks;render();
-    if(d===ymd(new Date()))checkNew(r.tasks)}
-  catch(e){fail(e)}finally{$('refreshBtn').textContent='⟳'}
-}
-const OPEN={Pending:1,Picked:1,Dropped:1};
-const delayed=t=>OPEN[t.status]&&(now()-t.postedAt)/60000>DELAY;
-const chip=(c,v,l)=>`<div class="chip ${c}"><b>${v}</b><span>${l}</span></div>`;
+  function loadAvailFromParsed(parsed, sourceLabel){
+    if(!parsed.rows.length){ qsel('#avail-status').textContent = 'No available-qty rows found.'; return false; }
+    var h = parsed.headers;
+    var kSTO = findKey(h,['sto','transfer number','transfer order']);
+    var kItem = findKey(h,['item number','item']);
+    var kSize = findKey(h,['size']);
+    var kQty = findKey(h,['ship quantity','available qty','qty']);
+    if(!kSTO || !kQty){
+      qsel('#avail-status').textContent = 'Could not find required columns (STO, Ship quantity). Check your headers.';
+      return false;
+    }
+    var map = {};
+    parsed.rows.forEach(function(r){
+      var key = r[kSTO] + '|' + (kItem? r[kItem]:'') + '|' + (kSize? r[kSize]:'');
+      map[key] = parseFloat(r[kQty])||0;
+    });
+    state.availMap = map;
+    qsel('#avail-status').textContent = parsed.rows.length + ' available-qty rows loaded' + (sourceLabel? ' — '+sourceLabel : '') + '.';
+    refreshAll();
+    return true;
+  }
 
-function render(){
-  const q=$('boardSearch').value.trim().toLowerCase();
-  const L=tasks.filter(t=>t.status!=='Cancelled').filter(t=>!q||[t.showroom,t.postedBy,t.pickedBy,t.dropName,t.rcvBy,t.assigned,t.postNote,t.orderId].join(' ').toLowerCase().includes(q));
-  const a=L.filter(t=>t.status==='Pending').sort((x,y)=>(y.assigned===ME.name)-(x.assigned===ME.name)||x.postedAt-y.postedAt);
-  const b=L.filter(t=>t.status==='Picked').sort((x,y)=>x.postedAt-y.postedAt);
-  const c=L.filter(t=>t.status==='Dropped').sort((x,y)=>x.droppedAt-y.droppedAt);
-  const d=L.filter(t=>t.status==='Received').sort((x,y)=>y.rcvAt-x.rcvAt);
-  const tot=L.map(t=>t.total).filter(v=>v!=null);
-  $('boardChips').innerHTML=chip('c-amber',a.length,'To collect')+chip('c-blue',b.length,'In transit')+
-    chip('c-teal',c.length,'At FC – to receive')+chip('c-green',d.length,'Received')+
-    chip('c-red',L.filter(delayed).length,'Delayed >2h')+
-    chip('c-violet',dur(tot.length?tot.reduce((x,y)=>x+y,0)/tot.length:null),'Avg post → drop');
-  $('nP').textContent=$('sP').textContent=a.length;$('nT').textContent=$('sT').textContent=b.length;
-  $('nD').textContent=$('sD').textContent=c.length;$('nR').textContent=$('sR').textContent=d.length;
-  $('lanePending').innerHTML=a.map(cardP).join('')||'<div class="empty">Nothing to collect</div>';
-  $('lanePicked').innerHTML=b.map(cardT).join('')||'<div class="empty">Nothing in transit</div>';
-  $('laneDropped').innerHTML=c.map(cardD).join('')||'<div class="empty">Nothing waiting at FC</div>';
-  $('laneDone').innerHTML=d.map(cardR).join('')||'<div class="empty">Nothing received yet</div>';
-}
-function head(t){
-  const old=ymd(new Date(t.postedAt))!==ymd(new Date())&&t.status!=='Received';
-  const drv=t.assigned?`<span class="tag ${t.assigned===ME.name?'me':'drv'}">→ ${esc(t.assigned)}</span>`:'';
-  const ord=t.orderId?`<span class="tag gray">#${esc(t.orderId)}</span>`:'';
-  return `<div><span class="shop">${esc(t.showroom)}</span>${ord}${drv}${delayed(t)?'<span class="tag red">DELAYED</span>':''}${old?'<span class="tag gray">'+dayLbl(t.postedAt)+'</span>':''}</div>`;
-}
-const nb=(l,v)=>v?`<div class="note"><b>${l}:</b> ${esc(v)}</div>`:'';
-const busy=t=>t._saving?' saving':'';
-const undoLink=(t,label)=>P.undo&&!t._saving?`<button class="lnk amber" onclick="doUndo('${t.id}')">↩ Undo ${label}</button>`:'';
+  function loadAvail(){
+    var text = qsel('#ta-avail').value;
+    var parsed = parsePasted(text);
+    if(!parsed.rows.length){ qsel('#avail-status').textContent = 'Paste data first.'; return; }
+    loadAvailFromParsed(parsed);
+  }
 
-function cardP(t){
-  const can=P.pick&&!t._tmp;
-  const cancel=P.cancel&&!t._tmp?`<button class="lnk red" onclick="doCancel('${t.id}')">Cancel task</button>`:'';
-  return `<div class="task${delayed(t)?' delayed':''}${busy(t)}${freshIds.has(t.id)?' fresh':''}">${head(t)}
-    <div class="meta">Posted <b>${hm(t.postedAt)}</b> by <b>${esc(t.postedBy)}</b> · waiting <span class="elapsed">${dur((now()-t.postedAt)/60000)}</span></div>
-    ${nb('Note',t.postNote)}
-    ${can?`<div class="act"><label class="check"><input type="checkbox" onchange="doStep('pick','${t.id}',this)"> Picked from showroom</label></div>`:''}
-    ${cancel?`<div class="links">${cancel}</div>`:''}</div>`;
-}
-function cardT(t){
-  const can=P.drop&&!t._saving;
-  return `<div class="task picked${delayed(t)?' delayed':''}${busy(t)}">${head(t)}
-    <div class="meta">Posted <b>${hm(t.postedAt)}</b> by <b>${esc(t.postedBy)}</b><br>
-    Picked <b>${hm(t.pickedAt)}</b> by <b>${esc(t.pickedBy)}</b> · wait ${dur(t.wait)}<br>
-    In transit <span class="elapsed">${dur((now()-t.pickedAt)/60000)}</span></div>
-    ${nb('Post',t.postNote)}${nb('Pick',t.pickNote)}
-    ${can?`<div class="act"><label class="check drop"><input type="checkbox" onchange="doStep('drop','${t.id}',this)"> Dropped at Fulfillment Center</label></div>`:''}
-    <div class="links">${undoLink(t,'pick')}</div></div>`;
-}
-function cardD(t){
-  const can=P.receive&&!t._saving;
-  return `<div class="task dropped${delayed(t)?' delayed':''}${busy(t)}">${head(t)}
-    <div class="meta">Picked <b>${hm(t.pickedAt)}</b> by <b>${esc(t.pickedBy)}</b> · Dropped <b>${hm(t.droppedAt)}</b> by <b>${esc(t.dropName)}</b><br>
-    Post → drop <b>${dur(t.total)}</b> · waiting for receipt <span class="elapsed">${dur((now()-t.droppedAt)/60000)}</span></div>
-    ${nb('Post',t.postNote)}${nb('Pick',t.pickNote)}${nb('Drop',t.dropNote)}
-    ${can?`<div class="act"><label class="check rcv"><input type="checkbox" onchange="doStep('rcv','${t.id}',this)"> Received by Fulfillment Center</label></div>`:''}
-    <div class="links">${undoLink(t,'drop')}</div></div>`;
-}
-function cardR(t){
-  return `<div class="task done${busy(t)}"><div><span class="shop">${esc(t.showroom)}</span>${t.total>DELAY?'<span class="tag orange">'+dur(t.total)+'</span>':''}</div>
-    ${t.orderId?`<div class="meta">Order <b>#${esc(t.orderId)}</b></div>`:''}
-    <div class="steps"><div class="step">Posted<b>${hm(t.postedAt)}</b>${esc(t.postedBy)}</div>
-      <div class="step">Picked<b>${hm(t.pickedAt)}</b>${esc(t.pickedBy)}</div>
-      <div class="step">Dropped<b>${hm(t.droppedAt)}</b>${esc(t.dropName)}</div>
-      <div class="step">Received<b>${hm(t.rcvAt)}</b>${esc(t.rcvBy)}</div></div>
-    <div class="meta">Post → drop <b>${dur(t.total)}</b></div>
-    ${nb('Post',t.postNote)}${nb('Pick',t.pickNote)}${nb('Drop',t.dropNote)}${nb('Receive',t.rcvNote)}
-    <div class="links">${undoLink(t,'receipt')}</div></div>`;
-}
-const find=id=>tasks.find(t=>t.id===id);
+  function normalizeHeader(h){ return String(h).trim().toLowerCase(); }
 
-/* ---- Steps: confirm → instant screen update → save in background ---- */
-const STEP={
-  pick:{title:'Confirm pickup',verb:'picked up from the showroom',ok:'Yes, picked',cls:'blue',api:'markPicked',msg:'Picked ✓',
-    apply:(t,n)=>({status:'Picked',pickedBy:ME.name,pickedAt:now(),pickNote:n,wait:(now()-t.postedAt)/60000})},
-  drop:{title:'Confirm drop-off',verb:'dropped at the Fulfillment Center',ok:'Yes, dropped',cls:'teal',api:'markDropped',msg:'Dropped at FC ✓',
-    apply:(t,n)=>({status:'Dropped',dropName:ME.name,droppedAt:now(),dropNote:n,transit:(now()-t.pickedAt)/60000,total:(now()-t.postedAt)/60000})},
-  rcv:{title:'Confirm receipt',verb:'received by the Fulfillment Center',ok:'Yes, received',cls:'green',api:'markReceived',msg:'Received ✓',
-    apply:(t,n)=>({status:'Received',rcvBy:ME.name,rcvAt:now(),rcvNote:n,handover:(now()-t.droppedAt)/60000,full:(now()-t.postedAt)/60000})}
-};
-async function doStep(kind,id,cb){
-  cb.checked=false;
-  const t=find(id);if(!t)return;const S=STEP[kind];
-  const note=await confirmBox({title:S.title,ok:S.ok,cls:S.cls,
-    text:`<b>${esc(t.showroom)}</b>${t.orderId?' (#'+esc(t.orderId)+')':''} ${S.verb} by <b>${esc(ME.name)}</b> at <b>${hm(now())}</b>?`});
-  if(note===null)return;
-  const before={...t};
-  Object.assign(t,S.apply(t,note),{_saving:true});
-  render();toast(S.msg);sync(1);
-  try{Object.assign(t,await api(S.api,TOKEN,id,note),{_saving:false})}
-  catch(e){Object.assign(t,before);fail(e)}
-  finally{sync(0);render()}
-}
-async function doUndo(id){
-  const t=find(id);if(!t)return;
-  const back={Picked:['To Collect','pick-up by '+t.pickedBy],Dropped:['In Transit','drop-off by '+t.dropName],Received:['At FC','receipt by '+t.rcvBy]}[t.status];
-  if(!back)return;
-  const reason=await confirmBox({title:'Undo last step?',ok:'Yes, undo',cls:'amber',placeholder:'Reason (e.g. ticked by mistake)',
-    text:`This removes the <b>${esc(back[1])}</b> for <b>${esc(t.showroom)}</b> and moves it back to <b>${back[0]}</b>.`});
-  if(reason===null)return;
-  const before={...t};
-  const clr={Picked:{status:'Pending',pickedBy:'',pickedAt:null,pickNote:'',wait:null},
-             Dropped:{status:'Picked',dropName:'',droppedAt:null,dropNote:'',transit:null,total:null},
-             Received:{status:'Dropped',rcvBy:'',rcvAt:null,rcvNote:'',handover:null,full:null}}[t.status];
-  Object.assign(t,clr,{_saving:true});render();sync(1);
-  try{Object.assign(t,await api('undoTask',TOKEN,id,reason),{_saving:false});toast('Step undone ↩')}
-  catch(e){Object.assign(t,before);fail(e)}
-  finally{sync(0);render()}
-}
-async function doCancel(id){
-  const t=find(id);if(!t)return;
-  const reason=await confirmBox({title:'Cancel this task?',ok:'Yes, cancel task',cls:'red',required:true,placeholder:'Reason for cancelling *',
-    text:`<b>${esc(t.showroom)}</b> posted at ${hm(t.postedAt)} by ${esc(t.postedBy)} will be cancelled.`});
-  if(reason===null)return;
-  const before={...t};t.status='Cancelled';render();sync(1);
-  try{await api('cancelTask',TOKEN,id,reason);toast('Task cancelled')}
-  catch(e){Object.assign(t,before);fail(e)}
-  finally{sync(0);render()}
-}
+  // Converts an array of row objects (as returned by the Apps Script JSON endpoint,
+  // keyed by original sheet header text) into the {headers, rows} shape that
+  // loadSTOFromParsed / loadAvailFromParsed expect (same shape parsePasted() produces).
+  function objectsToParsedShape(rows){
+    if(!rows || !rows.length) return {headers:[], rows:[]};
+    var headers = Object.keys(rows[0]).map(normalizeHeader);
+    var outRows = rows.map(function(r){
+      var o = {};
+      Object.keys(r).forEach(function(k){
+        var v = r[k];
+        o[normalizeHeader(k)] = (v===null || v===undefined) ? '' : String(v).trim();
+      });
+      return o;
+    });
+    return {headers:headers, rows:outRows};
+  }
 
-/* ================= POST ================= */
-const isDelRet=s=>/deliver|return|refund/i.test(s);
-function updateOther(){
-  const sel=[...document.querySelectorAll('#shopGrid input:checked')].map(x=>x.value);
-  const dr=sel.some(isDelRet);
-  $('otherWrap').classList.toggle('hidden',dr);
-  $('orderWrap').classList.toggle('hidden',!dr);
-  if(dr)$('otherShop').value='';else $('orderId').value='';
-}
-$('shopGrid').onchange=updateOther;
-$('postBtn').onclick=async()=>{
-  const shops=[...document.querySelectorAll('#shopGrid input:checked')].map(x=>x.value);
-  const other=$('otherShop').value.trim();if(other&&!$('otherWrap').classList.contains('hidden'))shops.push(other);
-  if(!shops.length)return toast('Select at least one showroom',true);
-  const driver=(document.querySelector('#drvGrid input:checked')||{}).value||'';
-  if(!driver)return toast('Select a driver',true);
-  const orderId=$('orderId').value.trim();
-  if(shops.some(isDelRet)&&!orderId){$('orderId').focus();return toast('Order ID is required for Delivery / Return',true)}
-  const note0=$('postNote').value.trim();
-  const extra=await confirmBox({title:'Post '+(shops.length>1?shops.length+' tasks':'task')+'?',ok:'Yes, post',
-    placeholder:'Add a note (optional)',
-    text:`<b>${shops.map(esc).join(', ')}</b><br>${orderId&&shops.some(isDelRet)?'Order ID: <b>'+esc(orderId)+'</b><br>':''}Driver: <b>${esc(driver)}</b><br>Posted by: <b>${esc(ME.name)}</b>${note0?'<br>Note: '+esc(note0):''}`});
-  if(extra===null)return;
-  const note=[note0,extra].filter(Boolean).join(' – ');
-  const temps=shops.map((s,i)=>({id:'tmp'+Date.now()+i,_tmp:true,_saving:true,showroom:s,postedBy:ME.name,postNote:note,postedAt:now(),status:'Pending',assigned:driver,orderId:isDelRet(s)?orderId:''}));
-  tasks.push(...temps);
-  document.querySelectorAll('#shopGrid input:checked').forEach(x=>x.checked=false);
-  $('otherShop').value='';$('postNote').value='';
-  document.querySelectorAll('#drvGrid input:checked').forEach(x=>x.checked=false);$('orderId').value='';
-  updateOther();
-  $('boardDate').value=ymd(new Date());
-  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='board'));
-  ['board','post','summary'].forEach(x=>$('tab-'+x).classList.toggle('hidden',x!=='board'));
-  $('seg').querySelector('[data-l=pending]').click();
-  render();toast(shops.length+' task'+(shops.length>1?'s':'')+' posted ✓');sync(1);
-  try{const real=await api('addTasks',TOKEN,shops,note,driver,orderId);
-    real.forEach(t=>seen.add(t.id));
-    tasks=tasks.filter(t=>!temps.includes(t)).concat(real)}
-  catch(e){tasks=tasks.filter(t=>!temps.includes(t));fail(e)}
-  finally{sync(0);render()}
-};
+  function currentSheetUrl(){ return qsel('#sheet-url').value.trim(); }
 
-/* ================= SUMMARY ================= */
-function setQuick(q){
-  const d=new Date();let f=new Date(d),t=new Date(d);
-  if(q==='yday'){f.setDate(d.getDate()-1);t=new Date(f)}
-  else if(q==='7')f.setDate(d.getDate()-6);else if(q==='30')f.setDate(d.getDate()-29);
-  else if(q==='month')f=new Date(d.getFullYear(),d.getMonth(),1);
-  $('sFrom').value=ymd(f);$('sTo').value=ymd(t);
-  document.querySelectorAll('#quick button').forEach(b=>b.classList.toggle('on',b.dataset.q===q));
-}
-$('quick').onclick=e=>{const b=e.target.closest('button');if(b){setQuick(b.dataset.q);loadSummary()}};
-$('sGo').onclick=()=>{document.querySelectorAll('#quick button').forEach(b=>b.classList.remove('on'));loadSummary()};
+  function setSyncStatus(text){
+    document.querySelectorAll('.sync-status').forEach(function(el){ el.textContent = text; });
+  }
 
-async function loadSummary(){
-  if(!P.summary)return;
-  let f=$('sFrom').value,t=$('sTo').value;if(!f||!t)return toast('Pick both dates',true);
-  if(f>t){[f,t]=[t,f];$('sFrom').value=f;$('sTo').value=t}
-  $('shopBody').innerHTML='<tr><td colspan="7" class="empty">Loading…</td></tr>';
-  try{renderSummary(await api('getSummary',TOKEN,f,t))}catch(e){fail(e)}
-}
-function renderSummary(s){
-  const A=s.all;
-  $('sumChips').innerHTML=chip('c-violet',A.n,'Tasks')+chip('c-teal',A.dropped,'Dropped at FC')+
-    chip('c-green',A.received,'Received by FC')+chip('c-amber',A.open,'Not dropped yet')+chip('c-red',A.late,'Late >2h');
-  $('big3').innerHTML=`<div class="b-avg"><b>${dur(A.avg)}</b><span>Average</span></div>
-    <div class="b-min"><b>${dur(A.min)}</b><span>Fastest</span></div><div class="b-max"><b>${dur(A.max)}</b><span>Slowest</span></div>`;
-  const maxAvg=Math.max(1,...s.shops.map(r=>r.avg||0));
-  $('shopBody').innerHTML=s.shops.sort((a,b)=>(b.avg||0)-(a.avg||0)).map(r=>
-    `<tr class="${r.late||r.avg>DELAY?'late':''}"><td class="sr">${esc(r.name)}</td><td>${r.n}</td><td>${r.late||'–'}</td>
-      <td><b>${dur(r.avg)}</b></td><td>${dur(r.min)}</td><td>${dur(r.max)}</td>
-      <td><div class="bar"><i style="width:${((r.avg||0)/maxAvg*100).toFixed(0)}%"></i></div></td></tr>`).join('')
-    ||'<tr><td colspan="7" class="empty">No tasks in this period</td></tr>';
-  $('drvBody').innerHTML=s.drivers.sort((a,b)=>b.n-a.n).map(r=>
-    `<tr class="${r.late?'late':''}"><td class="sr">${esc(r.name)}</td><td>${r.n}</td><td>${r.late||'–'}</td>
-      <td><b>${dur(r.avg)}</b></td><td>${dur(r.min)}</td><td>${dur(r.max)}</td></tr>`).join('')
-    ||'<tr><td colspan="6" class="empty">No driver tasks in this period</td></tr>';
-}
+  function itemLevelRow(r){
+    var avail = availFor(r);
+    var scanned = scannedCount(r.transfer, r.barcode);
+    var balance = avail - scanned;
+    var status;
+    if(avail===0 && scanned===0) status='No stock';
+    else if(scanned>avail) status='OVER-SCAN';
+    else if(scanned===0) status='Not scanned';
+    else if(balance<=0) status='Fully scanned';
+    else status='Partial';
+    return {
+      'Transfer number': r.transfer, 'Item number': r.item, 'Variant number': r.variant,
+      'Search name': r.search, 'Barcode': r.barcode, 'Brand': r.brand, 'Product': r.product,
+      'Size': r.size, 'Color': r.color, 'Transfer qty': r.qty, 'Available qty': avail,
+      'Scanned qty': scanned, 'Balance': balance, 'Status': status,
+      'Last updated': new Date().toLocaleString()
+    };
+  }
 
-/* ================= RESUME SAVED SESSION ================= */
-(async()=>{
-  const tok=ls.get('dc_tok');if(!tok)return;
-  $('loginErr').textContent='Signing in…';
-  try{start(await api('resume',tok))}catch(e){ls.del('dc_tok');$('loginErr').textContent=''}
+  function postToSheet(action, rows){
+    var url = currentSheetUrl();
+    if(!url) return Promise.reject(new Error('No Google Sheet URL set.'));
+    return fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain;charset=utf-8'}, // avoids CORS preflight against Apps Script
+      body: JSON.stringify({action: action, rows: rows})
+    }).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); });
+  }
+
+  function liveSyncEnabled(){
+    var chk = qsel('#chk-live-sync');
+    return !!(chk && chk.checked && currentSheetUrl());
+  }
+
+  function syncItemLive(transfer, barcode){
+    if(!liveSyncEnabled()) return;
+    var row = state.stoRows.filter(function(r){ return r.transfer===transfer && r.barcode===barcode; })[0];
+    if(!row) return;
+    postToSheet('upsert', [itemLevelRow(row)])
+      .then(function(){ setSyncStatus('Synced ' + new Date().toLocaleTimeString()); })
+      .catch(function(err){ setSyncStatus('Live sync failed: ' + err.message); });
+  }
+
+  function syncAllToSheet(){
+    if(!currentSheetUrl()){ setSyncStatus('Paste your Apps Script Web App URL on the Load data tab first.'); return; }
+    setSyncStatus('Syncing…');
+    postToSheet('replaceAll', state.stoRows.map(itemLevelRow))
+      .then(function(){ setSyncStatus('All items synced to Google Sheet at ' + new Date().toLocaleTimeString() + '.'); })
+      .catch(function(err){ setSyncStatus('Sync failed: ' + err.message); });
+  }
+
+  // Extracts {transfer, barcode, qty} entries (qty>0 only) from the SCAN DATA
+  // sheet rows returned by Apps Script, and stashes them as a pending decision
+  // rather than applying them immediately — the resume/start-again prompt decides.
+  function handleScanDataFromSheet(rows){
+    var normalized = (rows||[]).map(function(r){
+      var transfer = r['Transfer number'] || r['transfer number'] || '';
+      var barcode = r['Barcode'] || r['barcode'] || '';
+      var qty = parseInt(r['Scanned qty'] || r['scanned qty'] || 0, 10) || 0;
+      return {transfer:String(transfer).trim(), barcode:String(barcode).trim(), qty:qty};
+    }).filter(function(r){ return r.transfer && r.barcode && r.qty>0; });
+    state.pendingScanData = normalized;
+  }
+
+  function pendingScanTotals(){
+    var items = state.pendingScanData.length;
+    var qty = state.pendingScanData.reduce(function(s,r){ return s+r.qty; }, 0);
+    return {items:items, qty:qty};
+  }
+
+  function applyPendingScanData(){
+    state.scans = [];
+    state.pendingScanData.forEach(function(entry){
+      for(var i=0;i<entry.qty;i++){
+        state.scans.push({transfer:entry.transfer, barcode:entry.barcode, time:new Date().toLocaleTimeString(), result:'Restored from Sheet'});
+      }
+    });
+    hideResumeOverlay();
+    refreshAll();
+  }
+
+  function startFreshScans(){
+    state.scans = [];
+    state.pendingScanData = [];
+    hideResumeOverlay();
+    refreshAll();
+    postToSheet('clearAll', []).then(function(){
+      setSyncStatus('Scan history cleared on Google Sheet at ' + new Date().toLocaleTimeString() + '.');
+    }).catch(function(err){
+      setSyncStatus('Could not clear the sheet: ' + err.message);
+    });
+  }
+
+  function showResumeOverlay(itemCount, totalQty){
+    qsel('#resume-summary').textContent = 'Found ' + itemCount + ' item line(s) with ' + totalQty + ' unit(s) already scanned on your Google Sheet. Continue where you left off, or start again to reset all scanned quantities to zero.';
+    qsel('#resume-overlay').classList.add('show');
+  }
+  function hideResumeOverlay(){ qsel('#resume-overlay').classList.remove('show'); }
+
+  function maybeShowResumePrompt(){
+    var totals = pendingScanTotals();
+    if(totals.items>0 && totals.qty>0){
+      showResumeOverlay(totals.items, totals.qty);
+    }
+  }
+
+  // Fetches STO + Available Qty + Scan history from the Apps Script Web App in
+  // one request and applies them. onProgress(percent, label) is optional and
+  // used by the startup loading screen; omitted on manual reloads.
+  function fetchAndApplySheetData(onProgress){
+    var url = currentSheetUrl();
+    if(!url) return Promise.reject(new Error('No Google Sheet URL set.'));
+    if(onProgress) onProgress(20, 'connect');
+    return fetch(url)
+      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(function(data){
+        if(onProgress) onProgress(50, 'sto');
+        var stoOk = loadSTOFromParsed(objectsToParsedShape(data.sto || []), 'Google Sheet');
+        if(onProgress) onProgress(72, 'avail');
+        var availOk = loadAvailFromParsed(objectsToParsedShape(data.avail || []), 'Google Sheet');
+        if(onProgress) onProgress(90, 'scans');
+        handleScanDataFromSheet(data.scanData || data.scan || []);
+        return {stoOk:stoOk, availOk:availOk};
+      });
+  }
+
+  function loadFromGoogleSheet(){
+    var statusEl = qsel('#sheet-status');
+    var btn = qsel('#btn-load-sheet');
+    if(!currentSheetUrl()){ statusEl.textContent = 'Paste your Apps Script Web App URL first.'; return; }
+    statusEl.textContent = 'Loading…';
+    btn.disabled = true;
+    fetchAndApplySheetData()
+      .then(function(res){
+        var when = new Date().toLocaleTimeString();
+        statusEl.textContent = (res.stoOk && res.availOk)
+          ? ('Loaded from Google Sheet at ' + when + '.')
+          : 'Loaded with issues — check the STO / Available qty status messages below.';
+        maybeShowResumePrompt();
+      })
+      .catch(function(err){
+        statusEl.textContent = 'Error loading sheet: ' + err.message + '. Check the URL and that the Apps Script is deployed with access set to "Anyone".';
+      })
+      .finally(function(){
+        btn.disabled = false;
+      });
+  }
+
+  function uniqueSTOs(){
+    var seen = {}, out = [];
+    state.stoRows.forEach(function(r){ if(!seen[r.transfer]){ seen[r.transfer]=1; out.push(r.transfer); } });
+    return out;
+  }
+
+  function availFor(row){
+    var key = row.transfer + '|' + row.item + '|' + row.size;
+    if(state.availMap.hasOwnProperty(key)) return state.availMap[key];
+    return 0;
+  }
+
+  function scannedCount(transfer, barcode){
+    var n=0;
+    var normTarget = normalizeBarcode(barcode);
+    state.scans.forEach(function(s){
+      if(s.transfer===transfer && normalizeBarcode(s.barcode)===normTarget) n++;
+    });
+    return n;
+  }
+
+  function setManualScannedCount(transfer, barcode, count){
+    var normTarget = normalizeBarcode(barcode);
+    state.scans = state.scans.filter(function(s){
+      return !(s.transfer === transfer && normalizeBarcode(s.barcode) === normTarget);
+    });
+    for(var i = 0; i < count; i++){
+      state.scans.push({
+        transfer: transfer,
+        barcode: barcode,
+        time: new Date().toLocaleTimeString(),
+        result: 'Manual Edit'
+      });
+    }
+    refreshScanTable();
+    refreshScanLog();
+    refreshSummary();
+    syncItemLive(transfer, barcode);
+  }
+
+  function refreshLoadedSummary(){
+    var el = qsel('#loaded-summary');
+    if(!state.stoRows.length){ el.textContent = 'No data loaded yet.'; return; }
+    var stos = uniqueSTOs();
+    var haveAvail = Object.keys(state.availMap).length > 0;
+    el.innerHTML = stos.map(function(s){
+      var n = state.stoRows.filter(function(r){ return r.transfer===s; }).length;
+      return '<div>' + s + ' — ' + n + ' line(s)</div>';
+    }).join('') + (haveAvail? '' : '<div style="color:var(--warn);margin-top:6px;">Available qty not loaded — missing SKUs default to 0.</div>');
+  }
+
+  function refreshSTOSelect(){
+    var sel = qsel('#sel-sto');
+    var cur = sel.value;
+    var stos = uniqueSTOs();
+    sel.innerHTML = stos.map(function(s){ return '<option value="'+s+'">'+s+'</option>'; }).join('');
+    if(stos.indexOf(cur)>-1) sel.value = cur;
+    updateLocationInputs();
+  }
+
+  function currentSTO(){ return qsel('#sel-sto').value; }
+
+  function updateLocationInputs(){
+    var sto = currentSTO();
+    if(!sto) return;
+    if(!state.stoLocations[sto]){
+      state.stoLocations[sto] = { from: '', to: '' };
+    }
+    qsel('#input-from-plant').value = state.stoLocations[sto].from || '';
+    qsel('#input-to-plant').value = state.stoLocations[sto].to || '';
+  }
+
+  function saveLocationInputs(){
+    var sto = currentSTO();
+    if(!sto) return;
+    if(!state.stoLocations[sto]){
+      state.stoLocations[sto] = {};
+    }
+    state.stoLocations[sto].from = qsel('#input-from-plant').value;
+    state.stoLocations[sto].to = qsel('#input-to-plant').value;
+  }
+
+  function refreshScanTable(){
+    var sto = currentSTO();
+    qsel('#scan-sto-label').textContent = sto || '—';
+    var rows = state.stoRows.filter(function(r){ return r.transfer===sto; });
+
+    var filterTerm = (qsel('#input-filter').value || '').trim().toLowerCase();
+    if(filterTerm){
+      rows = rows.filter(function(r){
+        return (r.transfer || '').toLowerCase().includes(filterTerm) ||
+               (r.variant || '').toLowerCase().includes(filterTerm) ||
+               (r.item || '').toLowerCase().includes(filterTerm) ||
+               (r.search || '').toLowerCase().includes(filterTerm) ||
+               (r.barcode || '').toLowerCase().includes(filterTerm) ||
+               (r.brand || '').toLowerCase().includes(filterTerm) ||
+               (r.size || '').toLowerCase().includes(filterTerm);
+      });
+    }
+
+    qsel('#scan-item-count').textContent = rows.length + ' items';
+    var tbody = qsel('#scan-table tbody');
+    if(!rows.length){ tbody.innerHTML = '<tr><td colspan="13" class="empty">No matching items found.</td></tr>'; return; }
+
+    tbody.innerHTML = rows.map(function(r){
+      var avail = availFor(r);
+      var scanned = scannedCount(r.transfer, r.barcode);
+      var balance = avail - scanned;
+      var status, cls;
+
+      if(avail===0 && scanned===0){ status='No stock'; cls='pill-dim'; }
+      else if(scanned>avail){ status='OVER-SCAN'; cls='pill-bad'; }
+      else if(scanned===0){ status='Not scanned'; cls='pill-dim'; }
+      else if(balance<=0){ status='Fully scanned'; cls='pill-ok'; }
+      else { status='Partial'; cls='pill-warn'; }
+
+      var scannedCellHTML = state.isEditing ?
+        '<input type="number" min="0" class="edit-qty-input" data-barcode="'+r.barcode+'" value="'+scanned+'">' :
+        scanned;
+
+      return '<tr>'+
+        '<td class="mono">'+r.barcode+'</td>'+
+        '<td class="mono">'+r.item+'</td>'+
+        '<td class="mono">'+(r.variant||'—')+'</td>'+
+        '<td>'+(r.search||'—')+'</td>'+
+        '<td>'+(r.brand||'—')+'</td>'+
+        '<td>'+r.product+'</td>'+
+        '<td>'+r.size+'</td>'+
+        '<td>'+r.color+'</td>'+
+        '<td>'+r.qty+'</td>'+
+        '<td>'+avail+'</td>'+
+        '<td>'+scannedCellHTML+'</td>'+
+        '<td>'+balance+'</td>'+
+        '<td><span class="pill '+cls+'">'+status+'</span></td>'+
+      '</tr>';
+    }).join('');
+
+    if(state.isEditing){
+      tbody.querySelectorAll('.edit-qty-input').forEach(function(input){
+        input.addEventListener('change', function(e){
+          var newCount = parseInt(e.target.value, 10) || 0;
+          var bc = e.target.getAttribute('data-barcode');
+          setManualScannedCount(sto, bc, newCount);
+        });
+      });
+    }
+  }
+
+  function refreshScanLog(){
+    var el = qsel('#scan-log');
+    if(!state.scans.length){ el.innerHTML='<div class="empty">No scans yet.</div>'; return; }
+    var items = state.scans.slice().reverse().slice(0,100);
+    el.innerHTML = items.map(function(s){
+      return '<div>'+s.time+' &nbsp;·&nbsp; '+s.transfer+' &nbsp;·&nbsp; '+s.barcode+' &nbsp;·&nbsp; '+s.result+'</div>';
+    }).join('');
+  }
+
+  function refreshSummary(){
+    var stos = uniqueSTOs();
+    var totalTransfer=0, totalAvail=0, totalScanned=0, readyCount=0;
+    var tbody = qsel('#summary-table tbody');
+    if(!stos.length){ tbody.innerHTML='<tr><td colspan="6" class="empty">No STO data loaded.</td></tr>'; }
+    else{
+      tbody.innerHTML = stos.map(function(sto){
+        var rows = state.stoRows.filter(function(r){ return r.transfer===sto; });
+        var tq=0, aq=0, sq=0;
+        rows.forEach(function(r){
+          tq += r.qty;
+          var a = availFor(r);
+          aq += a;
+          sq += scannedCount(r.transfer, r.barcode);
+        });
+        var bal = aq - sq;
+        var status, cls;
+        if(aq===0 && sq===0){ status='No stock'; cls='pill-dim'; }
+        else if(bal<=0){ status='Ready to post'; cls='pill-ok'; readyCount++; }
+        else { status='In progress'; cls='pill-warn'; }
+        totalTransfer+=tq; totalAvail+=aq; totalScanned+=sq;
+        return '<tr><td>'+sto+'</td><td>'+tq+'</td><td>'+aq+'</td><td>'+sq+'</td><td>'+bal+'</td><td><span class="pill '+cls+'">'+status+'</span></td></tr>';
+      }).join('');
+    }
+    qsel('#summary-stats').innerHTML = [
+      ['STOs loaded', stos.length],
+      ['Ready to post', readyCount],
+      ['Total transfer qty', totalTransfer],
+      ['Total available qty', totalAvail],
+      ['Total scanned', totalScanned]
+    ].map(function(p){ return '<div class="stat"><div class="n">'+p[1]+'</div><div class="l">'+p[0]+'</div></div>'; }).join('');
+  }
+
+  function printSTOReceipt(){
+    var sto = currentSTO();
+    if(!sto) return;
+    var rows = state.stoRows.filter(function(r){ return r.transfer===sto; });
+    var printArea = qsel('#print-area');
+
+    var locs = state.stoLocations[sto] || {};
+    var fromPlant = locs.from || '—';
+    var toPlant = locs.to || '—';
+
+    var totShipped = 0;
+    var tableRows = '';
+
+    rows.forEach(function(r){
+      var scanned = scannedCount(r.transfer, r.barcode);
+      if(scanned > 0){
+        totShipped += scanned;
+        tableRows += '<tr>'+
+          '<td>'+r.barcode+'</td>'+
+          '<td>'+(r.search || '—')+'</td>'+
+          '<td>'+r.product+'</td>'+
+          '<td>'+r.size+' / '+r.color+'</td>'+
+          '<td>'+scanned+'</td>'+
+        '</tr>';
+      }
+    });
+
+    if(!tableRows){
+      tableRows = '<tr><td colspan="5" style="text-align:center;">No scanned items to print.</td></tr>';
+    }
+
+    printArea.innerHTML =
+      '<div class="print-header">'+
+        '<div><h2>STO Handover &amp; Verification Sheet</h2><div>STO Order #: <b>'+sto+'</b></div></div>'+
+        '<div>Date: <b>'+new Date().toLocaleDateString()+'</b></div>'+
+      '</div>'+
+      '<div class="print-route-info">'+
+        '<div>From Location: <b>'+fromPlant+'</b></div>'+
+        '<div>To Location: <b>'+toPlant+'</b></div>'+
+      '</div>'+
+      '<table class="print-table">'+
+        '<thead><tr><th>Barcode</th><th>Search Name</th><th>Product</th><th>Size/Color</th><th>Shipped Qty</th></tr></thead>'+
+        '<tbody>'+tableRows+'</tbody>'+
+        '<tfoot><tr><th colspan="4">Total Shipped Quantity</th><th>'+totShipped+'</th></tr></tfoot>'+
+      '</table>'+
+      '<div class="signatures">'+
+        '<div class="sig-box"><p><b>Handed Over By (Sender):</b></p><br><p>Name: _______________________</p><br><p>Signature: ___________________</p><br><p>Date: ________________________</p></div>'+
+        '<div class="sig-box"><p><b>Received By (Receiver):</b></p><br><p>Name: _______________________</p><br><p>Signature: ___________________</p><br><p>Date: ________________________</p></div>'+
+      '</div>';
+
+    window.print();
+  }
+
+  function refreshAll(){
+    refreshLoadedSummary();
+    refreshSTOSelect();
+    refreshScanTable();
+    refreshScanLog();
+    refreshSummary();
+  }
+
+  function doScan(barcode){
+    barcode = barcode.trim();
+    if(!barcode) return;
+    var sto = currentSTO();
+    var fb = qsel('#scan-feedback');
+    if(!sto){ fb.textContent = 'Select an STO first.'; return; }
+
+    var normInput = normalizeBarcode(barcode);
+    var match = state.stoRows.filter(function(r){
+      return r.transfer===sto && normalizeBarcode(r.barcode)===normInput;
+    })[0];
+
+    var result;
+    if(!match){
+      result = 'Not on this STO';
+      fb.innerHTML = '<span class="pill pill-bad">Not on this STO</span> — check the STO selector or the barcode.';
+      qsel('#scan-input').parentElement.classList.remove('flash-good');
+      void qsel('#scan-input').offsetWidth;
+      qsel('#scan-input').parentElement.classList.add('flash-bad');
+      beepBad();
+    } else {
+      var avail = availFor(match);
+      var before = scannedCount(sto, match.barcode);
+      state.scans.push({transfer:sto, barcode:barcode, time:new Date().toLocaleTimeString()});
+      var after = before+1;
+      if(after>avail){
+        result = 'OVER-SCAN (' + after + ' of ' + avail + ')';
+        fb.innerHTML = '<span class="pill pill-bad">OVER-SCAN</span> — scanned '+after+' but only '+avail+' available for '+match.product+'.';
+        beepBad();
+      } else {
+        result = 'OK';
+        fb.innerHTML = '<span class="pill pill-ok">Scanned</span> '+match.product+' ('+match.size+' / '+match.color+') — '+after+' of '+avail+'.';
+        beepGood();
+      }
+    }
+    if(match){
+      state.scans[state.scans.length-1].result = result;
+    } else {
+      state.scans.push({transfer:sto, barcode:barcode, time:new Date().toLocaleTimeString(), result:result});
+    }
+    refreshScanTable();
+    refreshScanLog();
+    refreshSummary();
+    if(match) syncItemLive(sto, match.barcode);
+  }
+
+  function undoLast(){
+    if(!state.scans.length) return;
+    var removed = state.scans.pop();
+    refreshScanTable();
+    refreshScanLog();
+    refreshSummary();
+    if(removed && removed.result !== 'Not on this STO') syncItemLive(removed.transfer, removed.barcode);
+  }
+
+  function exportCSV(){
+    var rows = [['Transfer number','Item number','Variant number','Search name','Barcode','Brand','Product','Size','Color','Transfer qty','Available qty','Scanned qty','Balance','Status']];
+    state.stoRows.forEach(function(r){
+      var avail = availFor(r);
+      var scanned = scannedCount(r.transfer, r.barcode);
+      var balance = avail - scanned;
+      var status;
+      if(avail===0 && scanned===0) status='No stock';
+      else if(scanned>avail) status='OVER-SCAN';
+      else if(scanned===0) status='Not scanned';
+      else if(balance<=0) status='Fully scanned';
+      else status='Partial';
+      rows.push([r.transfer,r.item,r.variant,r.search,r.barcode,r.brand,r.product,r.size,r.color,r.qty,avail,scanned,balance,status]);
+    });
+    var csv = rows.map(function(row){
+      return row.map(function(c){ var s=String(c==null?'':c); return /[",\n]/.test(s)? '"'+s.replace(/"/g,'""')+'"' : s; }).join(',');
+    }).join('\n');
+    var blob = new Blob([csv], {type:'text/csv'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'sto-scan-results.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  document.querySelectorAll('.tab').forEach(function(t){
+    t.addEventListener('click', function(){
+      document.querySelectorAll('.tab').forEach(function(x){ x.classList.remove('active'); });
+      document.querySelectorAll('.panel').forEach(function(x){ x.classList.remove('active'); });
+      t.classList.add('active');
+      qsel('#panel-'+t.dataset.tab).classList.add('active');
+      if(t.dataset.tab==='scan'){ refreshScanTable(); qsel('#scan-input').focus(); }
+      if(t.dataset.tab==='summary'){ refreshSummary(); }
+    });
+  });
+
+  qsel('#btn-load-sheet').addEventListener('click', loadFromGoogleSheet);
+  qsel('#btn-load-sto').addEventListener('click', loadSTO);
+  qsel('#btn-load-avail').addEventListener('click', loadAvail);
+  qsel('#btn-clear-sto').addEventListener('click', function(){ qsel('#ta-sto').value=''; qsel('#sto-status').textContent=''; });
+  qsel('#btn-clear-avail').addEventListener('click', function(){ qsel('#ta-avail').value=''; qsel('#avail-status').textContent=''; });
+
+  qsel('#sel-sto').addEventListener('change', function(){
+    updateLocationInputs();
+    refreshScanTable();
+  });
+
+  qsel('#input-from-plant').addEventListener('input', saveLocationInputs);
+  qsel('#input-to-plant').addEventListener('input', saveLocationInputs);
+
+  qsel('#scan-input').addEventListener('keydown', function(e){
+    if(e.key==='Enter'){ doScan(e.target.value); e.target.value=''; }
+  });
+  qsel('#btn-undo').addEventListener('click', undoLast);
+  qsel('#btn-export').addEventListener('click', exportCSV);
+  qsel('#btn-sync-sheet').addEventListener('click', syncAllToSheet);
+  qsel('#btn-print-sto').addEventListener('click', printSTOReceipt);
+
+  qsel('#input-filter').addEventListener('input', refreshScanTable);
+
+  qsel('#btn-toggle-edit').addEventListener('click', function(){
+    state.isEditing = !state.isEditing;
+    this.textContent = state.isEditing ? 'Done Editing' : 'Edit Scanned Quantities';
+    this.classList.toggle('ghost', !state.isEditing);
+    refreshScanTable();
+  });
+
+  qsel('#btn-start-again').addEventListener('click', function(){
+    if(!state.scans.length){ return; }
+    if(confirm('Clear all scanned quantities and start again? This also clears the saved scan history on your Google Sheet. This cannot be undone.')){
+      startFreshScans();
+    }
+  });
+
+  qsel('#btn-resume-continue').addEventListener('click', applyPendingScanData);
+  qsel('#btn-resume-fresh').addEventListener('click', startFreshScans);
+
+  // ---------- Login / loading / bootstrap ----------
+
+  function isAuthed(){
+    try{ return localStorage.getItem(AUTH_KEY) === '1'; }catch(e){ return false; }
+  }
+  function setAuthed(v){
+    try{ if(v) localStorage.setItem(AUTH_KEY,'1'); else localStorage.removeItem(AUTH_KEY); }catch(e){}
+  }
+
+  function showLogin(){
+    qsel('#login-overlay').classList.add('show');
+    qsel('#login-password').focus();
+  }
+  function hideLogin(){ qsel('#login-overlay').classList.remove('show'); }
+
+  function attemptLogin(){
+    var val = qsel('#login-password').value;
+    if(val === APP_PASSWORD){
+      setAuthed(true);
+      hideLogin();
+      startApp();
+    } else {
+      qsel('#login-error').textContent = 'Incorrect password. Please try again.';
+      qsel('#login-password').value = '';
+      qsel('#login-password').focus();
+    }
+  }
+  qsel('#btn-login').addEventListener('click', attemptLogin);
+  qsel('#login-password').addEventListener('keydown', function(e){ if(e.key==='Enter') attemptLogin(); });
+  qsel('#btn-signout').addEventListener('click', function(){
+    setAuthed(false);
+    location.reload();
+  });
+
+  var STEP_ORDER = ['session','connect','sto','avail','scans','ready'];
+  var STEP_THRESHOLDS = {session:0, connect:20, sto:50, avail:72, scans:90, ready:100};
+
+  function setLoadingProgress(pct, stepKey){
+    qsel('#loading-bar').style.width = pct + '%';
+    var labels = {
+      session:'Verifying your session…',
+      connect:'Connecting to Google Sheet…',
+      sto:'Loading STO data…',
+      avail:'Loading available qty…',
+      scans:'Checking previous scan history…',
+      ready:'Ready.'
+    };
+    qsel('#loading-label').textContent = labels[stepKey] || 'Loading…';
+    STEP_ORDER.forEach(function(key){
+      var row = qsel('#loading-steps [data-step="'+key+'"]');
+      var dot = row.querySelector('.step-dot');
+      dot.classList.remove('done','active');
+      if(pct >= STEP_THRESHOLDS[key] && key===stepKey){ dot.classList.add('active'); }
+      else if(pct > STEP_THRESHOLDS[key]){ dot.classList.add('done'); }
+    });
+  }
+
+  function showLoadingUI(){ qsel('#loading-overlay').classList.add('show'); }
+  function hideLoadingUI(){ qsel('#loading-overlay').classList.remove('show'); }
+  function showApp(){
+    qsel('#app-root').style.display = 'block';
+    qsel('#topbar').style.display = 'flex';
+  }
+
+  function startApp(){
+    showLoadingUI();
+    setLoadingProgress(6, 'session');
+    setTimeout(function(){
+      setLoadingProgress(20, 'connect');
+      if(!currentSheetUrl()){
+        setLoadingProgress(100, 'ready');
+        setTimeout(function(){ hideLoadingUI(); refreshAll(); showApp(); }, 450);
+        return;
+      }
+      fetchAndApplySheetData(function(pct, stepKey){ setLoadingProgress(pct, stepKey); })
+        .then(function(){
+          setLoadingProgress(100, 'ready');
+          setTimeout(function(){
+            hideLoadingUI();
+            showApp();
+            maybeShowResumePrompt();
+          }, 350);
+        })
+        .catch(function(err){
+          setLoadingProgress(100, 'ready');
+          qsel('#loading-label').textContent = 'Could not reach Google Sheet — continuing offline.';
+          setTimeout(function(){ hideLoadingUI(); refreshAll(); showApp(); }, 900);
+        });
+    }, 300);
+  }
+
+  refreshAll();
+  if(isAuthed()){
+    hideLogin();
+    startApp();
+  } else {
+    showLogin();
+  }
 })();
 </script>
 </body>
